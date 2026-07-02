@@ -107,6 +107,7 @@ sequenceDiagram
   Note right of AR: priceClass + per-network PricingConfig = NEW.<br/>Everything below is REUSED
   AR->>AR: cost = curve(class,tps,dur) x bytes / amuletPrice
   AR->>AR: splitAndBurn — burn Canton Coin
+  Note over AR: also mints a ValidatorRewardCoupon over the burn
   AR->>MT: create/update (usdSpent, totalPurchased)
   MT-->>GD: observed on-ledger
   GD->>SEQ: SetTrafficPurchased(absolute balance)
@@ -131,7 +132,7 @@ sequenceDiagram
   participant RTA as RealizedThroughputAttestation (NEW)
   participant DSO as DSO (2/3 BFT)
 
-  OP->>LOCK: lock 20% stake (holders include DSO)
+  OP->>LOCK: lock 20% stake (DSO already co-signs via the Amulet)
   OP->>CS: create commitment (committedTps, duration)
   Note over CS,GD: while Active and above threshold
   GD->>SEQ: SetTrafficPurchased (discounted balance)

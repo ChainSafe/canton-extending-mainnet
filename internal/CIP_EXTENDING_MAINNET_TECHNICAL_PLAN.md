@@ -267,6 +267,7 @@ sequenceDiagram
   Note right of AR: priceClass + per-network PricingConfig = NEW.<br/>Everything below is REUSED
   AR->>AR: cost = curve(class,tps,dur) x bytes / amuletPrice
   AR->>AR: splitAndBurn — burn Canton Coin
+  Note over AR: also mints a ValidatorRewardCoupon over the burn
   AR->>MT: create/update (usdSpent, totalPurchased)
   MT-->>GD: observed on-ledger
   GD->>SEQ: SetTrafficPurchased(absolute balance)
@@ -343,7 +344,7 @@ sequenceDiagram
   participant RTA as RealizedThroughputAttestation (NEW)
   participant DSO as DSO (2/3 BFT)
 
-  OP->>LOCK: lock 20% stake (holders include DSO)
+  OP->>LOCK: lock 20% stake (DSO already co-signs via the Amulet)
   OP->>CS: create commitment (committedTps, duration)
   Note over CS,GD: while Active and above threshold
   GD->>SEQ: SetTrafficPurchased (discounted balance)
@@ -364,7 +365,7 @@ sequenceDiagram
   end
 ```
 
-**Approach — thin orchestration over `LockedAmulet`.** A new `CommitmentStake` template (signatories `dso` + `operator`) indexes one or more standard `LockedAmulet` escrows whose `TimeLock.holders` include the `dso` (so the DSO can burn from them), and carries `committedTps`, `committedDurationMonths`, `perRoundBurnRate`, `status : {Active|UnderThreshold|Forfeiting|Settled}`, thresholds. Custody, unlock, and expiry are all existing `LockedAmulet` mechanics; burning uses the existing `splitAndBurn` path **which already emits no reward coupons** — so "burn without yielding rewards" needs no new burn *semantics*, only a new contract that calls a burn on a metric condition.
+**Approach — thin orchestration over `LockedAmulet`.** A new `CommitmentStake` template (signatories `dso` + `operator`) indexes one or more standard `LockedAmulet` escrows; the `dso` already co-signs every `LockedAmulet` via the underlying `Amulet` (`LockedAmulet` is `signatory lock.holders, signatory amulet`, and `Amulet` is `signatory dso, owner`), so a `dso`-controlled burn choice needs no extra lock holder. It carries `committedTps`, `committedDurationMonths`, `perRoundBurnRate`, `status : {Active|UnderThreshold|Forfeiting|Settled}`, and thresholds. Custody, unlock, and expiry are all existing `LockedAmulet` mechanics — but **the burn is genuinely new semantics**: the existing `splitAndBurn` path *does* mint a `ValidatorRewardCoupon` over its burn (`AmuletRules.daml:2116`), so a coupon-free shortfall-burn is *not* `splitAndBurn` on a metric trigger — it needs a new choice that burns part of the locked principal **and suppresses the reward coupon**. That is exactly why GATE-3 is a genuine upstream ask, not a formality.
 
 **Two genuinely net-new pieces:**
 1. **Realized-throughput attestation** (the long pole, shared with §5.3 and §5.5). Because extension activity is invisible to SVs, this is a **self-reported, DSO-co-signed** `RealizedThroughputAttestation { dso, operator, syncId, round, realizedTps, observedBurnCc }`, fed from the operator's own sequencer metering + Scan-style data. Consider requiring multi-SV confirmation to harden it. **There is no native realized-TPS quantity on-ledger today.**
