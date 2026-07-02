@@ -30,7 +30,7 @@ The hard news, in priority order:
 
 2. **Three "independent" anti-fraud layers collapse into one trust assumption.** Activity on an extension synchronizer is *cryptographically invisible* to the Super Validators (Canton's per-synchronizer privacy model). So the realized-TPS metric (for staking), the reward report (for minting), and the burn-vs-credit link are all ultimately **self-attested by the same operator** on a single-operator synchronizer. The security of network-wide BME expansion reduces to an economic invariant the CIP never states: *staked collateral ≥ value of fraudulently-mintable rewards.*
 
-3. **The two riskiest pieces are upstream changes ChainSafe cannot ship.** Metric-gated partial burning of a `LockedAmulet` principal is a **Splice Amulet Daml** change (new authorization + a DSO vote to activate); reassigning Amulet to where the DSO can witness/burn it is a **Canton-core / GA** question. Both are upstream of ChainSafe — if either comes back "no," large parts of §5.4 and §5.5 are unbuildable as specified.
+3. **The two riskiest pieces are upstream changes ChainSafe cannot ship.** Metric-gated partial burning of a `LockedAmulet` principal is a **Splice Amulet Daml** change (new authorization + a DSO vote to activate); reassigning Amulet to where the DSO can witness/burn it is a **Digital Asset decision** (they govern the Canton-core repo and its release roadmap), while the *pinning* side is a **DSO-governance** knob (`requiredSynchronizers`). Both are upstream of ChainSafe — if either comes back "no," large parts of §5.4 and §5.5 are unbuildable as specified.
 
 The single hardest **net-new primitive** — a trustworthy **realized-TPS / org-internal-spend oracle** — is on the critical path for the org-internal cap (§5.3), staking (§5.4), and reward reporting (§5.5) simultaneously. The privacy boundary, not the math, is the real ceiling on this CIP.
 
@@ -500,8 +500,8 @@ The realized-TPS oracle is the critical path. For extension synchronizers it is 
 
 | Layer | What | Who controls it |
 |---|---|---|
-| **Canton protocol** (upstream DA) | Amulet reassignment / `requiredSynchronizers` GA; any new dynamic synchronizer params | Digital Asset / Canton core — **ChainSafe cannot ship unilaterally** |
-| **Splice Daml** (open-source, DSO-activated) | per-synchronizer pricing config; curve function; price-class buy choice; **app-internal + org-internal classifiers** + cap; commitment-stake orchestration + **metric-gated partial-burn choice**; reward-report template + mint choice + override; new `CRARC_*` constructors | community PRs to `canton-network/splice` + a DSO vote to activate |
+| **Canton protocol** (upstream DA) | Amulet-reassignment capability + whether multi-sync reassignment is GA (out of alpha); any new dynamic synchronizer params | Digital Asset / Canton core — **ChainSafe cannot ship unilaterally** |
+| **Splice Daml** (open-source, DSO-activated) | per-synchronizer pricing config; the `requiredSynchronizers` pinning policy (DSO-governed); curve function; price-class buy choice; **app-internal + org-internal classifiers** + cap; commitment-stake orchestration + **metric-gated partial-burn choice**; reward-report template + mint choice + override; new `CRARC_*` constructors | community PRs to `canton-network/splice` + a DSO vote to activate |
 | **Splice apps** (Scala automation) | SV-app triggers: report ingest/challenge/mint; per-round shortfall trigger; window maintenance | community / SV operators |
 | **Off-chain operator tooling** | realized-TPS oracle feed; `SetTrafficPurchased` grant-driver; top-up automation repointing; operator reward-reporter; **shadow-mode pricing/quote tool** | **ChainSafe — as an SV / extension-synchronizer operator** |
 
