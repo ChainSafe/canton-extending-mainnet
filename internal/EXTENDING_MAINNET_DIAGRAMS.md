@@ -1,6 +1,6 @@
 # Extending Mainnet: Tokenomics Alignment — Architecture & Sequence Diagrams
 
-**Companion to:** [Kickoff Proposal](EXTENDING_MAINNET_KICKOFF_PROPOSAL.md) · [Technical Plan](CIP_EXTENDING_MAINNET_TECHNICAL_PLAN.md) · [Exec Summary](EXTENDING_MAINNET_EXEC_SUMMARY.md)
+**Companion to:** [Kickoff Proposal](EXTENDING_MAINNET_KICKOFF_PROPOSAL.md) · [Technical Plan](CIP_EXTENDING_MAINNET_TECHNICAL_PLAN.md)
 **Date:** 2026-06-30
 
 ### Legend (viability coding)
@@ -107,6 +107,7 @@ sequenceDiagram
   Note right of AR: priceClass + per-network PricingConfig = NEW.<br/>Everything below is REUSED
   AR->>AR: cost = curve(class,tps,dur) x bytes / amuletPrice
   AR->>AR: splitAndBurn — burn Canton Coin
+  Note over AR: also mints a ValidatorRewardCoupon over the burn
   AR->>MT: create/update (usdSpent, totalPurchased)
   MT-->>GD: observed on-ledger
   GD->>SEQ: SetTrafficPurchased(absolute balance)
@@ -117,7 +118,7 @@ sequenceDiagram
 
 ## 3. Sequence — Commitment staking + per-round shortfall burn
 
-Discount is delivered by *granting* subsidized balance (not by re-pricing). The shortfall burn is the piece that needs a Digital Asset protocol change.
+Discount is delivered by *granting* subsidized balance (not by re-pricing). The shortfall burn is the piece that needs a Splice Amulet (Daml) change — upstream + DSO-activated.
 
 ```mermaid
 sequenceDiagram
@@ -131,7 +132,7 @@ sequenceDiagram
   participant RTA as RealizedThroughputAttestation (NEW)
   participant DSO as DSO (2/3 BFT)
 
-  OP->>LOCK: lock 20% stake (holders include DSO)
+  OP->>LOCK: lock 20% stake (DSO already co-signs via the Amulet)
   OP->>CS: create commitment (committedTps, duration)
   Note over CS,GD: while Active and above threshold
   GD->>SEQ: SetTrafficPurchased (discounted balance)
@@ -182,7 +183,7 @@ sequenceDiagram
 
 ## 5. Sequence — Org-internal classification + $500k/12mo cap
 
-Classification must check signed topology and be co-signed, or an operator could mislabel cross-org traffic as internal.
+Classification must check signed topology and be co-signed, or an operator could mislabel cross-org traffic as internal. *(The current CIP revision adds a third "app-internal" tier — a distinct "within a single application" predicate — not yet drawn here.)*
 
 ```mermaid
 sequenceDiagram

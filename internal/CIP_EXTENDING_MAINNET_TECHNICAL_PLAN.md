@@ -4,13 +4,13 @@
 **Author:** Sebastian Lindner (ChainSafe)
 **Subject CIP:** "Extending Mainnet: Tokenomics Alignment Across the Entire Canton Network" — Shaul Kfir (Digital Asset), Type: Tokenomics, Status: Draft
 **Audience:** ChainSafe engineering + management; input for the CIP authors / GSF
-**Date:** 2026-06-22
+**Date:** 2026-06-22 · **Reconciled 2026-07-02** against the current CIP revision (three base prices; Example 2 corrected; §6.2 units now in years)
 
 ---
 
 ## 0. Read this first
 
-This CIP is a **Splice / Canton-protocol + DSO-governance change.** The mechanisms it touches — sequencer traffic pricing, Canton Coin minting, DSO governance — are implemented in **Splice** (`github.com/hyperledger-labs/splice`) and **Canton** (`github.com/digital-asset/canton`); none of it is application-layer code. The concrete deliverables this effort owns are (a) this analysis, (b) off-chain operator tooling (the realized-TPS oracle feed, the traffic grant-driver, a shadow-mode pricing/quote tool), and (c) ChainSafe's leverage **as a Super Validator and a prospective extension-synchronizer operator** to co-design, vote on, and pilot the spec.
+This CIP is a **Splice / Canton-protocol + DSO-governance change.** The mechanisms it touches — sequencer traffic pricing, Canton Coin minting, DSO governance — are implemented in **Splice** (`github.com/canton-network/splice`) and **Canton** (`github.com/digital-asset/canton`). This is the Splice economic layer plus the Canton protocol and DSO governance — not end-user dApp code (Splice itself is DA's reference-application layer). The concrete deliverables this effort owns are (a) this analysis, (b) off-chain operator tooling (the realized-TPS oracle feed, the traffic grant-driver, a shadow-mode pricing/quote tool), and (c) ChainSafe's leverage **as a Super Validator and a prospective extension-synchronizer operator** to co-design, vote on, and pilot the spec.
 
 You were told "the mechanism for purchasing traffic is the main point." That is correct, and §5.2 is the heart of this document. But the verification pass surfaced things that gate the whole effort and that the CIP under-states — read §1 and §7 before §5.
 
@@ -26,11 +26,11 @@ The good news: the **spine already exists and is reusable**. Canton already burn
 
 The hard news, in priority order:
 
-1. **The "net cost" figures are a steady-state-BME identity — the CIP footnote resolves them.** A footnote decomposes the split: of equilibrium issuance, **90.25% → app + validator operators, 5% → Canton Foundation ecosystem development fund (this is the CIP-0082 dev fund), 4.75% → Super Validators** (= 100%; and 5% + 4.75% = the 9.75% "net"). Because Burn-Mint Equilibrium means total mint ≈ total burn at steady state, "for every $1 burned, ~90¢ returns to operators" holds *at that equilibrium*, and §7's distribution-override is precisely what lets a synchronizer operator capture that 90.25% for its own activity. Two caveats are spec-editorial, not blockers: (a) these are the **stable emissions ~10 years post-launch** — today's split is SV-heavy and still migrating, so 9.75% net is a forward-looking floor, not today's reality; (b) BME equality is an *equilibrium* property (the CIP itself notes the network is currently inflationary, i.e. mint > burn — which makes net economics *better* than 9.75%), not a per-transaction protocol guarantee. So the table's "Net" columns are sound — just label them as steady-state economics. *(An earlier pass of this analysis, done without the footnote, wrongly called the figure phantom; corrected here.)*
+1. **The "net cost" figures are a steady-state-BME identity — sound as steady-state economics.** The CIP body states only **90.25% of burn → app + validator operators, 9.75% net**. Our reconstruction of the 9.75% is **5% Canton Foundation dev fund (CIP-0082) + 4.75% Super Validators** (5% + 4.75% = 9.75%; 90.25% = 0.95 × 0.95) — but that decomposition is **ChainSafe's inference** (the CIP body states only 90.25%/9.75%), so present it as ours, not DA's. Because Burn-Mint Equilibrium means total mint ≈ total burn at steady state, "for every $1 burned, ~90¢ returns to operators" holds *at that equilibrium*, and §7's distribution-override is precisely what lets a synchronizer operator capture that 90.25% for its own activity. Two caveats are spec-editorial, not blockers: (a) these are the **stable emissions ~10 years post-launch** — today's split is SV-heavy and still migrating, so 9.75% net is a forward-looking floor, not today's reality; (b) BME equality is an *equilibrium* property (the CIP itself notes the network is currently inflationary, i.e. mint > burn — which makes net economics *better* than 9.75%), not a per-transaction protocol guarantee. So the table's "Net" columns are sound — just label them as steady-state economics.
 
 2. **Three "independent" anti-fraud layers collapse into one trust assumption.** Activity on an extension synchronizer is *cryptographically invisible* to the Super Validators (Canton's per-synchronizer privacy model). So the realized-TPS metric (for staking), the reward report (for minting), and the burn-vs-credit link are all ultimately **self-attested by the same operator** on a single-operator synchronizer. The security of network-wide BME expansion reduces to an economic invariant the CIP never states: *staked collateral ≥ value of fraudulently-mintable rewards.*
 
-3. **The two riskiest pieces are upstream changes ChainSafe cannot ship.** Metric-gated partial burning of a `LockedAmulet` principal, and reassigning Amulet to where the DSO can witness/burn it, are both Digital-Asset / Canton-core questions. If either comes back "no," large parts of §5.4 and §5.5 are unbuildable as specified.
+3. **The two riskiest pieces are upstream changes ChainSafe cannot ship.** Metric-gated partial burning of a `LockedAmulet` principal is a **Splice Amulet Daml** change (new authorization + a DSO vote to activate); reassigning Amulet to where the DSO can witness/burn it is a **Digital Asset decision** (they govern the Canton-core repo and its release roadmap), while the *pinning* side is a **DSO-governance** knob (`requiredSynchronizers`). Both are upstream of ChainSafe — if either comes back "no," large parts of §5.4 and §5.5 are unbuildable as specified.
 
 The single hardest **net-new primitive** — a trustworthy **realized-TPS / org-internal-spend oracle** — is on the critical path for the org-internal cap (§5.3), staking (§5.4), and reward reporting (§5.5) simultaneously. The privacy boundary, not the math, is the real ceiling on this CIP.
 
@@ -72,7 +72,7 @@ Composability across synchronizers does **not** come from a shared ledger. It co
 
 That enables atomic cross-synchronizer settlement (e.g. a delivery-vs-payment spanning two providers' synchronizers). This is what "Canton Mainnet is a network of networks" means concretely.
 
-> ⚠️ **Caveat that the CIP depends on silently:** multi-synchronizer connectivity + reassignment was, in the docs reviewed, gated behind an alpha feature flag (`PARTICIPANT_FEATURE_FLAG_ENABLE_ALPHA_MULTI_SYNCHRONIZER`). And `AmuletDecentralizedSynchronizerConfig.requiredSynchronizers` may actively *prevent* reassigning Amulet off the active synchronizer. **Whether Canton Coin can be reassigned to the Global Synchronizer at all is a go/no-go question** for the entire "one BME, staked in CC" model (GATE-2, §7).
+> ⚠️ **Caveat that the CIP depends on silently:** multi-synchronizer connectivity + reassignment was, in the docs reviewed, gated behind an alpha feature flag (`PARTICIPANT_FEATURE_FLAG_ENABLE_ALPHA_MULTI_SYNCHRONIZER`). And `AmuletDecentralizedSynchronizerConfig.requiredSynchronizers` may pin Amulet to the active (Global) synchronizer. Note the tension: if CC is pinned to Global, staked CC is *already* DSO-witnessable (no reassignment needed); the open question is whether that pinning holds and whether cross-synchronizer reassignment for composability is GA (GATE-2, §7).
 
 ---
 
@@ -116,7 +116,7 @@ Canton Coin ("Amulet" in code) runs a burn-and-mint model:
 - **Burn:** USD-denominated fees (per-transaction `createFee`/`transferFee`/`holdingFee`, and per-MB traffic) are burned, converted to CC at the round's `amuletPrice`.
 - **Mint:** new CC is issued on a **scheduled curve** — `issuanceCurve : Schedule RelTime IssuanceConfig`, with `amuletToIssuePerYear` (whitepaper steady state ~2.5B CC/yr, 100B/decade cap) divided across ~10-minute mining rounds (`OpenMiningRound → SummarizingMiningRound → IssuingMiningRound → ClosedMiningRound`). The per-round budget is split into pools — validator / app (featured vs unfeatured) / SV / faucet — *in proportion to activity "coupons"* (`AppRewardCoupon`, `ValidatorRewardCoupon`, `SvRewardCoupon`), all signed by the `dso` party. A ~5% Development Fund is deducted once from issuance (CIP-0082).
 
-> ✅ **The 90.25 / 9.75 split is a steady-state issuance identity (resolved by the CIP footnote), not a phantom number.** At steady-state BME (~10 yr post-launch) issuance splits **90.25% app+validator / 5% dev fund (CIP-0082) / 4.75% SV** (= 100%), and since mint ≈ burn at equilibrium, ~90.25% of burned value returns to operators. Remaining spec-editorial caveats: it's the **future** stable split (today is SV-heavy and migrating), and BME equality is an equilibrium property, not a per-tx rule. **Care still required:** the *mint* mechanism is the scheduled `issuanceCurve` (`amuletToIssuePerYear`), so the implementation must **not** encode "re-mint X% of each round's burn" — minting stays curve-driven; the 90.25% is what the equilibrium *produces*, not a per-round formula. The genuinely open tokenomics decision moves to §7 / GATE-1: whether report-driven minting for extension synchronizers is *additive to* or *drawn from* the curve.
+> ✅ **The 90.25 / 9.75 split is a steady-state issuance identity, not a phantom number.** The CIP body gives 90.25% app+validator / 9.75% net at steady-state BME. The finer **5% dev fund (CIP-0082) / 4.75% SV** split of the 9.75% is **ChainSafe's inference** — the CIP body states only 90.25%/9.75%, so present it as ours, not DA's. Since mint ≈ burn at equilibrium, ~90.25% of burned value returns to operators. Caveats: it's the **future** stable split (today is SV-heavy and migrating), and BME equality is an equilibrium property, not a per-tx rule. **Care still required:** the *mint* mechanism is the scheduled `issuanceCurve` (`amuletToIssuePerYear`), so the implementation must **not** encode "re-mint X% of each round's burn" — minting stays curve-driven; the 90.25% is what the equilibrium *produces*, not a per-round formula. The genuinely open tokenomics decision moves to §7 / GATE-1: whether report-driven minting for extension synchronizers is *additive to* or *drawn from* the curve.
 
 ### 3.3 Governance — the lever already exists
 
@@ -143,7 +143,7 @@ The closest **lifecycle precedent** is **CIP-0105 (SV reward locking, approved 2
 
 | CIP § | Requirement | Exists today | Net-new work |
 |---|---|---|---|
-| 6.1–6.3 | Discount curve `P_type · dur(d) · T^log10(tps)`, two base prices | Single flat `extraTrafficPrice` ($/MB); USD→CC via `amuletPrice`; `DA.Math` log/pow | Per-synchronizer pricing record; the curve function; **cents/tx ↔ $/MB bridge** (undefined) |
+| 6.1–6.3 | Discount curve `P_type · dur(d) · T^log10(tps)`, **three** base prices (regular/app-internal/org-internal) | Single flat `extraTrafficPrice` ($/MB); USD→CC via `amuletPrice`; `DA.Math` log/pow | Per-synchronizer pricing record; the curve function; **two classifiers** (app-internal + org-internal); **cents/tx ↔ $/MB bridge** (undefined) |
 | 6.4 | Org-internal class + ≤5 designated validators + $500k/12mo cap → zero credits | `PartyToParticipant` topology; `MemberTraffic.usdSpent` | "Same-operator" predicate; rolling-window accumulator; classifier choice; **who funds the post-cap free traffic** |
 | 7 | Report extension burn → DSO mints app/validator rewards; distribution override | Coupon model + `FeaturedAppActivityMarker` beneficiary-splitting; `dso`-signed minting | Cross-synchronizer **report→mint** protocol (none exists; CIP-0104 removed self-reporting); anti-fraud bounding; additive-vs-curve BME decision |
 | 8 | Stake 20%; per-round shortfall auto-burn (no rewards); replenish-or-forfeit | `LockedAmulet`/`TimeLock`; burn paths emit no coupons; CIP-0105 lifecycle shape; mining-round clock | **Realized-TPS oracle** (hardest); **metric-gated partial burn** of locked principal (upstream); per-round trigger |
@@ -231,13 +231,13 @@ flowchart TB
 
 **Formula.** Gross price = `base × T^log10(max(1,tps))`. Verified against the CIP's §5 table with `T = 0.5`: 100¢ → 50¢ → 25¢ → 12.5¢ at 1/10/100/1000 TPS. ✅
 
-**Notation bug to flag back to the authors.** The duration discount only reproduces the published table as
+**Notation bug to flag back to the authors (units now fixed; factor still off).** The duration discount only reproduces the published table as
 
 ```
 dur(years) = Di × (1 − D)^log2(max(1, years))     // Di = 0.5, D = 0.25  →  0.500, 0.375, 0.326 for 1/2/3 yr
 ```
 
-The formula *as written in §6.2* — `Di · D^log2(max(1,d))` with `D = 0.25` and `d` in **months** — does **not** reproduce the table (it yields ~1.2¢ where the table says 3.66¢ at 2 yr). Two issues: (a) `d` must be in **base-year units**, not months; (b) the per-doubling factor must be **0.75** (a 25% *incremental* discount), i.e. `(1−D)`, not `D`. Note the asymmetry with the throughput side, where `T = 0.5` is the *fraction paid* per decade. **This needs to be fixed in the CIP or the table is wrong.**
+The current revision fixed the **units** (§6.2 now reads `d` in *years*, not months). But the formula as written — `Di · D^log2(max(1,d))` with `D = 0.25` — still does **not** reproduce the table: at 2 yr it gives `0.5 × 0.25 = 0.125` (→ ~1.2¢ net) where the table wants pay-0.375 (3.66¢ net). The remaining bug: the per-doubling factor must be **0.75** (a 25% *incremental* discount), i.e. `(1−D)`, not `D`. Note the asymmetry with the throughput side, where `T = 0.5` is already the *fraction paid* per decade. **Units are fixed; the `D` vs `(1−D)` factor still needs correcting, or the table is wrong.**
 
 **Approach.** Put the curve in a **per-synchronizer** governed record (`SyncPricingConfig` / `ExtensionSynchronizerFeesConfig`), *not* on the global `AmuletRules`. Implement the curve as pure Daml using `DA.Math` (`logBase`, `**`), with the **throughput term forced to identity (1.0) when `isExtensionSynchronizer = false`** — enforcing "extensions only" in code, not convention. Reuse the existing USD→CC path verbatim (`priceUsd / amuletPrice`); **no new oracle.**
 
@@ -267,6 +267,7 @@ sequenceDiagram
   Note right of AR: priceClass + per-network PricingConfig = NEW.<br/>Everything below is REUSED
   AR->>AR: cost = curve(class,tps,dur) x bytes / amuletPrice
   AR->>AR: splitAndBurn — burn Canton Coin
+  Note over AR: also mints a ValidatorRewardCoupon over the burn
   AR->>MT: create/update (usdSpent, totalPurchased)
   MT-->>GD: observed on-ledger
   GD->>SEQ: SetTrafficPurchased(absolute balance)
@@ -277,8 +278,8 @@ sequenceDiagram
 
 **Approach — reuse the spine, layer policy on top.** The enabling facts: `AmuletRules_BuyMemberTraffic` already carries `synchronizerId`/`migrationId` and already separates `provider` (payer) from `memberId` (credited); byte-level params are already per-synchronizer; `SetTrafficPurchased` grants independently of burn. So:
 
-- **Per-synchronizer pricing state.** New `ExtensionSynchronizerFeesConfig` keyed by `synchronizerId`: two base prices (regular 100¢ / org-internal 10¢), the discount params, committed `tps`/`duration`, the designated-validator list, the cap. On the Global Synchronizer this lives in `AmuletConfig`, settable only by SV vote, with the throughput discount forced to identity. On an extension synchronizer the operator's own governance owns it.
-- **Price-class-aware buy choice.** Either a new `ExtensionSync_BuyMemberTraffic` or a `priceClass : {Regular|OrgInternal}` argument on the existing choice, selecting the per-synchronizer config by `synchronizerId` instead of the global `extraTrafficPrice`. **Reuse `splitAndBurn`, `MemberTraffic`, `expectedDso` unchanged.**
+- **Per-synchronizer pricing state.** New `ExtensionSynchronizerFeesConfig` keyed by `synchronizerId`: the **three base prices** the current revision defines (regular 100¢ / app-internal 30¢ / org-internal 10¢, framed as a *utility discount* off the regular price), the discount params, committed `tps`/`duration`, the designated-validator list, the cap. On the Global Synchronizer this lives in `AmuletConfig`, settable only by SV vote, with the throughput discount forced to identity. On an extension synchronizer the operator's own governance owns it.
+- **Price-class-aware buy choice.** Either a new `ExtensionSync_BuyMemberTraffic` or a `priceClass : {Regular|AppInternal|OrgInternal}` argument on the existing choice, selecting the per-synchronizer config by `synchronizerId` instead of the global `extraTrafficPrice`. **Reuse `splitAndBurn`, `MemberTraffic`, `expectedDso` unchanged.**
 - **Paymaster vs user-pays.** A per-synchronizer `PaymasterPolicy : {UserPays | OperatorSubsidized | AppSubsidized}` + the subsidizing party. Because `provider ≠ memberId` is already legal, "enforcement" is mostly: operator automation buys credits for member parties (subsidized), or users buy their own (user-pays), optionally gating who may exercise the buy choice for a given `memberId`.
 - **Capital efficiency falls out for free.** Reuse the existing top-up automation; the subsidizer buys only ~`targetThroughput × minTopupInterval` bytes per ~10-min interval — never floating a large balance. This *is* the CIP's §4 capital-efficiency claim.
 - **Where the burn lands.** The burn still happens on the **Global** `AmuletRules` (CC and coupons are `dso`-signed and pinned to `activeSynchronizer`). The genuinely hard part — attributing that burn to the right reward pools for off-Global activity — is §5.5.
@@ -287,7 +288,7 @@ sequenceDiagram
 
 > ⚠️ On a **single-operator** extension synchronizer the operator can grant unlimited free traffic via `SetTrafficPurchased` regardless of CC burned. The *only* thing tying credits to burn is the §5.5 honesty assumption. The burn-mint contribution is, mechanically, voluntary there. This is fine if framed honestly (the operator only cheats itself out of rewards) but it must be stated.
 
-### 5.3 Org-internal classification + $500k/12mo cap (CIP §6.4) — effort: **XL**
+### 5.3 Transaction-class classification (regular / app-internal / org-internal) + $500k/12mo cap (CIP §6.4) — effort: **XL**
 
 ```mermaid
 sequenceDiagram
@@ -316,7 +317,9 @@ sequenceDiagram
   end
 ```
 
-**The core problem is that "same operator" is not an on-ledger concept.** Canton identity is cryptographic and *explicitly decoupled* from legal identity; there is no namespace primitive that says "these ≤5 validators and this synchronizer are one company." The CIP's ≤5-designated-validator list *is* the workaround — but it is operator-asserted, and the operator authors the `PartyToParticipant` topology for its own validators. So an operator can host a counterparty's party on a designated validator and label genuinely cross-org traffic as "internal" to ride 10¢ pricing and the post-cap free regime.
+> **New in the current revision — three tiers, not two.** Pricing now has *three* base classes (regular 100¢ / **app-internal 30¢** / org-internal 10¢), framed as a **utility discount**. That adds a *second* classifier this analysis originally didn't cover: **app-internal** = "multiple parties *within a single application*" (e.g. a stablecoin transfer between two wallets), a **different and arguably harder** predicate than org-internal. "Same operator" is at least anchored in the ≤5-validator list; "same application" has no obvious on-ledger primitive — candidates are the transaction's Daml package-ID set or a featured-app identity, both needing a definition and an anti-gaming story. Treat app-internal classification as an open design question the CIP introduces.
+
+**The core problem** (for the org-internal tier) **is that "same operator" is not an on-ledger concept.** Canton identity is cryptographic and *explicitly decoupled* from legal identity; there is no namespace primitive that says "these ≤5 validators and this synchronizer are one company." The CIP's ≤5-designated-validator list *is* the workaround — but it is operator-asserted, and the operator authors the `PartyToParticipant` topology for its own validators. So an operator can host a counterparty's party on a designated validator and label genuinely cross-org traffic as "internal" to ride 10¢ pricing and the post-cap free regime.
 
 **Approach.**
 - **Designated registry** of ≤5 validator participant IDs in the synchronizer's governed config; membership changes vote-gated and **rate-limited** (so an operator can't rotate the 5 to reset the accumulator), and the accumulator follows the *set*, not individual IDs.
@@ -341,7 +344,7 @@ sequenceDiagram
   participant RTA as RealizedThroughputAttestation (NEW)
   participant DSO as DSO (2/3 BFT)
 
-  OP->>LOCK: lock 20% stake (holders include DSO)
+  OP->>LOCK: lock 20% stake (DSO already co-signs via the Amulet)
   OP->>CS: create commitment (committedTps, duration)
   Note over CS,GD: while Active and above threshold
   GD->>SEQ: SetTrafficPurchased (discounted balance)
@@ -362,7 +365,7 @@ sequenceDiagram
   end
 ```
 
-**Approach — thin orchestration over `LockedAmulet`.** A new `CommitmentStake` template (signatories `dso` + `operator`) indexes one or more standard `LockedAmulet` escrows whose `TimeLock.holders` include the `dso` (so the DSO can burn from them), and carries `committedTps`, `committedDurationMonths`, `perRoundBurnRate`, `status : {Active|UnderThreshold|Forfeiting|Settled}`, thresholds. Custody, unlock, and expiry are all existing `LockedAmulet` mechanics; burning uses the existing `splitAndBurn` path **which already emits no reward coupons** — so "burn without yielding rewards" needs no new burn *semantics*, only a new contract that calls a burn on a metric condition.
+**Approach — thin orchestration over `LockedAmulet`.** A new `CommitmentStake` template (signatories `dso` + `operator`) indexes one or more standard `LockedAmulet` escrows; the `dso` already co-signs every `LockedAmulet` via the underlying `Amulet` (`LockedAmulet` is `signatory lock.holders, signatory amulet`, and `Amulet` is `signatory dso, owner`), so a `dso`-controlled burn choice needs no extra lock holder. It carries `committedTps`, `committedDurationMonths`, `perRoundBurnRate`, `status : {Active|UnderThreshold|Forfeiting|Settled}`, and thresholds. Custody, unlock, and expiry are all existing `LockedAmulet` mechanics — but **the burn is genuinely new semantics**: the existing `splitAndBurn` path *does* mint a `ValidatorRewardCoupon` over its burn (`AmuletRules.daml:2116`), so a coupon-free shortfall-burn is *not* `splitAndBurn` on a metric trigger — it needs a new choice that burns part of the locked principal **and suppresses the reward coupon**. That is exactly why GATE-3 is a genuine upstream ask, not a formality.
 
 **Two genuinely net-new pieces:**
 1. **Realized-throughput attestation** (the long pole, shared with §5.3 and §5.5). Because extension activity is invisible to SVs, this is a **self-reported, DSO-co-signed** `RealizedThroughputAttestation { dso, operator, syncId, round, realizedTps, observedBurnCc }`, fed from the operator's own sequencer metering + Scan-style data. Consider requiring multi-SV confirmation to harden it. **There is no native realized-TPS quantity on-ledger today.**
@@ -374,7 +377,7 @@ sequenceDiagram
 
 **Cross-component hazards** (§6.C, §6.D): the stake is denominated in **CC** but the commitment is in **USD**, so an `amuletPrice` swing can trip forfeiture with zero change in throughput (needs continuous re-marking or it's an FX liquidation hazard). And the anti-fraud bound in §5.5 *depends on this stake*, while the shortfall burn *depends on the same operator-signed TPS number* — collateral and the thing it bounds are signed by the same party.
 
-**Work:** `[splice-daml/S]` `CommitmentConfig` in `AmuletConfig`; `[splice-daml/L]` `CommitmentStake` template; `[splice-daml/XL]` attestation template; `[canton-protocol or splice-daml/L]` `ProcessRound` partial-burn (pending GATE-3); `[splice-daml/M]` `Replenish` + `CheckThreshold`/forfeit; `[offchain/L]` per-round trigger + grant-driver + TPS oracle feed.
+**Work:** `[splice-daml/S]` `CommitmentConfig` in `AmuletConfig`; `[splice-daml/L]` `CommitmentStake` template; `[splice-daml/XL]` attestation template; `[splice-daml/L]` `ProcessRound` partial-burn (Splice Amulet change; pending GATE-3); `[splice-daml/M]` `Replenish` + `CheckThreshold`/forfeit; `[offchain/L]` per-round trigger + grant-driver + TPS oracle feed.
 
 ### 5.5 Reward reporting + distribution override (CIP §7) — effort: **XL**
 
@@ -417,7 +420,7 @@ sequenceDiagram
 
 **Split parameters by who must trust them.**
 
-- **GLOBAL DSO governance** (DsoRules vote, 2/3 BFT, `targetEffectiveAt`) — anything that keeps BME unified network-wide and that an operator must *not* be able to bend: base prices (100¢/10¢), discount factors (T, D, Di), floors (TPS≥1, ≥1yr, ≥1mo commit), stake % (20%), org-internal cap ($500k / 12mo / ≤5), replenish/forfeit params (~80% / ~1wk), the **rule that the throughput discount is forbidden on the Global Synchronizer**, and the CC/USD oracle source.
+- **GLOBAL DSO governance** (DsoRules vote, 2/3 BFT, `targetEffectiveAt`) — anything that keeps BME unified network-wide and that an operator must *not* be able to bend: base prices (100¢/30¢/10¢), discount factors (T, D, Di), floors (TPS≥1, ≥1yr, ≥1mo commit), stake % (20%), org-internal cap ($500k / 12mo / ≤5), replenish/forfeit params (~80% / ~1wk), the **rule that the throughput discount is forbidden on the Global Synchronizer**, and the CC/USD oracle source.
 - **PER-SYNCHRONIZER operator config** (no global vote) — local business choices: *which* ≤5 validators are designated, whether to actually offer the discount and at what committed TPS/duration, and the reward-distribution override.
 
 The Global Synchronizer is then modeled as **just one synchronizer whose per-synchronizer record is pinned to {regular pricing, throughput discount disabled}** — which is exactly the backward-compatible default, so a pre-CIP one-entry world maps to today's behavior unchanged.
@@ -425,7 +428,7 @@ The Global Synchronizer is then modeled as **just one synchronizer whose per-syn
 **Backward-compat is a hard test obligation, not a doc.** Extending `AmuletConfig.decentralizedSynchronizer` from a single `activeSynchronizer` to a keyed `Map synchronizerId → config` touches the single global config the live network depends on. There must be a **CI gate proving Global pricing is byte-for-byte unchanged** under the new schema, plus a DAR-upgrade plan and possibly a Canton protocol-version bump if new dynamic synchronizer params are added.
 
 **Phased rollout:**
-- **Phase 0 (spec):** resolve GATE-1 (GATE-0 resolved by the footnote), run GATE-2/3 feasibility spikes, decide smooth-vs-tiered + cents/tx↔bytes + org-internal predicate. Output: this doc → a ratified spec + param governance-tier inventory.
+- **Phase 0 (spec):** resolve GATE-1, run GATE-2/3 feasibility spikes, decide smooth-vs-tiered + cents/tx↔bytes + the app-internal/org-internal predicates. Output: this doc → a ratified spec + param governance-tier inventory.
 - **Phase 1 (DevNet, shadow):** per-synchronizer config + curve compute **off-ledger only** — validate the math against the §5 table; no burn, no grant. *This is the part ChainSafe can build independently, with no upstream dependency.*
 - **Phase 2 (TestNet, one extension synchronizer):** real `SetTrafficPurchased` grants + commitment stake with shortfall burn; Global Synchronizer untouched as control; exercise replenish + forfeiture.
 - **Phase 3 (TestNet):** cross-synchronizer reward-reporting + override against a test DSO.
@@ -437,7 +440,7 @@ The Global Synchronizer is then modeled as **just one synchronizer whose per-syn
 
 Each design is internally coherent; the seams are where this gets dangerous.
 
-**A. Pricing unit ⟂ charging unit.** Curve = **cents/tx**; sequencer = **bytes** with a fan-out multiplier. A DvP across synchronizers (canonical "regular" tx) has high fan-out → high byte cost; a trivial internal transfer is cheap — yet the CIP prices them flat at 100¢/10¢ *per tx*. Any `avgBytesPerTx` constant is gameable both directions (pack ops to ride the per-tx price; or get hit by fan-out the per-tx price didn't anticipate). **This is the single biggest technical contradiction** and it sits between the two largest components.
+**A. Pricing unit ⟂ charging unit.** Curve = **cents/tx**; sequencer = **bytes** with a fan-out multiplier. A DvP across synchronizers (canonical "regular" tx) has high fan-out → high byte cost; a trivial internal transfer is cheap — yet the CIP prices them flat at 100¢/30¢/10¢ *per tx*. Any `avgBytesPerTx` constant is gameable both directions (pack ops to ride the per-tx price; or get hit by fan-out the per-tx price didn't anticipate). **This is the single biggest technical contradiction** and it sits between the two largest components.
 
 **B. Forward-looking discount ⟂ consumption-measured pricing.** The discount can't live in the pricing formula; it lives at the `SetTrafficPurchased` grant layer — which is decoupled from burn. So pricing curve + staking burn + reward report are **not three independent mechanisms; they're one trust triangle.** On a single-operator synchronizer all three vertices are operator-controlled.
 
@@ -457,9 +460,9 @@ Each design is internally coherent; the seams are where this gets dangerous.
 
 In strict gating order. The first three are **go/no-go**; if any returns "no," large parts of §5.4–§5.5 are unbuildable as specified.
 
-- **GATE-0 — Net-cost framing (RESOLVED by the footnote; now editorial).** The footnote decomposes 9.75% = 5% dev fund (CIP-0082) + 4.75% SV, with 90.25% returning to operators — a steady-state-BME identity valid ~10 yr out. No longer a blocker. Action: implement minting as the curve (not a fixed % of burn); label the table's Net columns as *steady-state* economics; note today's split is SV-heavy/migrating and the network is currently inflationary (net is better than 9.75% now). The live tokenomics gate is GATE-1.
+- **GATE-0 — Net-cost framing (editorial, resolved).** The 90.25%/9.75% split is a steady-state-BME identity (valid ~10 yr out), so the table's Net columns are sound. The finer 9.75% = 5% dev fund + 4.75% SV breakdown is **ChainSafe's inference** (the CIP body states only 90.25%/9.75%) — present it as ours, not DA's. Actions: implement minting as the curve (not a fixed % of burn) and label the Net columns as *steady-state* (today's split is SV-heavy/migrating; the network is currently inflationary, so net is better than 9.75% now). The live tokenomics gate is GATE-1.
 - **GATE-1 — Additive vs curve-bound issuance.** Does report-driven mint *expand* issuance (changes the 100B/decade cap) or draw from the existing budget? **The single biggest tokenomics decision.** → *spec/SV ratification*
-- **GATE-2 — Stake denomination + reassignment feasibility.** If extension stake must be Global CC so the DSO can burn it, **prove Amulet can be reassigned to the Global Synchronizer** (`requiredSynchronizers` may forbid it) and confirm multi-synchronizer reassignment is GA in the targeted Canton version. If not, "one BME" collapses to "each synchronizer runs its own coin." → *canton-protocol spike*
+- **GATE-2 — Where staked CC lives + reassignment GA.** Two linked questions: (i) if Amulet is *pinned to the Global Synchronizer* (per §5.2), staked CC already sits where the DSO can witness/burn it and **no reassignment is needed** — confirm that pinning holds; (ii) the "network of networks" composability (§2.4) still needs **multi-synchronizer reassignment to be GA, not alpha**, in the targeted Canton version. (The earlier framing — "reassign Amulet *to* Global" — was backwards if CC never leaves Global.) → *canton-protocol spike*
 - **GATE-3 — Partial burn authorization.** Can a DSO-co-signed choice burn *part* of a third-party `LockedAmulet` principal with no re-mint and no coupon? **Net-new authorization in upstream Splice Amulet that ChainSafe does not control.** → *splice/canton spike*
 - **GATE-4 — Realized-TPS trust model.** Is there *any* verification (multi-SV confirmation, Scan cross-check, fraud proof), or pure trust+slash? If pure trust, the whole BME-expansion security reduces to the unstated invariant **stake value ≥ mintable rewards.** → *spec + design*
 - **GATE-5 — DSO governance-throughput budget.** Model worst-case per-round DSO transaction load across N synchronizers before committing to per-round (vs per-window) reporting/burn. → *capacity model*
@@ -498,19 +501,19 @@ The realized-TPS oracle is the critical path. For extension synchronizers it is 
 
 | Layer | What | Who controls it |
 |---|---|---|
-| **Canton protocol** (upstream DA) | metric-gated partial burn of locked principal; Amulet reassignment / `requiredSynchronizers`; any new dynamic synchronizer params | Digital Asset / Canton core — **ChainSafe cannot ship unilaterally** |
-| **Splice Daml** (open-source, DSO-activated) | per-synchronizer pricing config; curve function; price-class buy choice; org-internal registry + cap; commitment-stake orchestration; reward-report template + mint choice + override; new `CRARC_*` constructors | community PRs to `hyperledger-labs/splice` + a DSO vote to activate |
+| **Canton protocol** (upstream DA) | Amulet-reassignment capability + whether multi-sync reassignment is GA (out of alpha); any new dynamic synchronizer params | Digital Asset / Canton core — **ChainSafe cannot ship unilaterally** |
+| **Splice Daml** (open-source, DSO-activated) | per-synchronizer pricing config; the `requiredSynchronizers` pinning policy (DSO-governed); curve function; price-class buy choice; **app-internal + org-internal classifiers** + cap; commitment-stake orchestration + **metric-gated partial-burn choice**; reward-report template + mint choice + override; new `CRARC_*` constructors | community PRs to `canton-network/splice` + a DSO vote to activate |
 | **Splice apps** (Scala automation) | SV-app triggers: report ingest/challenge/mint; per-round shortfall trigger; window maintenance | community / SV operators |
 | **Off-chain operator tooling** | realized-TPS oracle feed; `SetTrafficPurchased` grant-driver; top-up automation repointing; operator reward-reporter; **shadow-mode pricing/quote tool** | **ChainSafe — as an SV / extension-synchronizer operator** |
 
-**The substantive Daml lands upstream in Splice** (`hyperledger-labs/splice`) — it compiles against Splice Amulet. The deliverables this effort owns are: (1) this plan, (2) the off-chain oracle / quote / grant tooling, and (3) ChainSafe's SV governance position. The whole CIP modifies the global `AmuletConfig` schema and BME semantics that the SVs collectively govern, so it **needs GSF/DA buy-in regardless** — ChainSafe's leverage is as a co-designer, a TestNet pilot operator, and an SV vote.
+**The substantive Daml lands upstream in Splice** (`canton-network/splice`) — it compiles against Splice Amulet. The deliverables this effort owns are: (1) this plan, (2) the off-chain oracle / quote / grant tooling, and (3) ChainSafe's SV governance position. The whole CIP modifies the global `AmuletConfig` schema and BME semantics that the SVs collectively govern, so it **needs GSF/DA buy-in regardless** — ChainSafe's leverage is as a co-designer, a TestNet pilot operator, and an SV vote.
 
 ---
 
 ## 10. Questions to take back to the CIP authors
 
-1. **Net-cost framing (GATE-0, resolved):** the footnote's 90.25 / 5 / 4.75 decomposition is clear — please just label the table's Net / Discounted-Net columns as *steady-state* (~10 yr) economics, since today's split is SV-heavy and migrating (and the network is currently inflationary, so net is better than 9.75% today). **Open (GATE-1):** is §7 report-driven minting *additive* to the issuance curve or *drawn from* it? (Determines whether this changes the 100B/decade cap and BME semantics network-wide.)
-2. **§6.2 formula:** the published table only reproduces with `d` in **years** and a per-doubling factor of **0.75** (not `D=0.25`). Please confirm the intended formula — the spec as written is inconsistent with the table.
+1. **Net-cost framing (GATE-0):** please confirm the decomposition of the 9.75% net — is it **5% dev fund (CIP-0082) + 4.75% SV**? The CIP body states only 90.25%/9.75%, so we're treating our breakdown as an inference until you confirm. Either way, please label the table's Net / Discounted-Net columns as *steady-state* (~10 yr) economics (today's split is SV-heavy and migrating; the network is currently inflationary, so net is better than 9.75% today). **Open (GATE-1):** is §7 report-driven minting *additive* to the issuance curve or *drawn from* it? (Determines whether this changes the 100B/decade cap and BME semantics network-wide.)
+2. **§6.2 formula:** the current revision fixed the units (`d` in **years**), but the formula still uses `D=0.25` where matching the table needs a per-doubling factor of **0.75** (= `1−D`) — at 2 yr the written formula gives 0.125, the table wants 0.375. Please confirm the intended formula.
 3. **Discount function:** smooth log curve or tiered? (Strongly recommend tiered to avoid Daml `Numeric` rounding divergence between quote and on-chain charge.)
 4. **cents/tx ↔ bytes:** the curve prices per transaction; the sequencer charges bytes with a fan-out multiplier. What is the canonical conversion, and how is it protected from gaming?
 5. **"Same operator":** Canton identity doesn't encode legal org. Is the ≤5-validator list the *definition* of "org-internal," and must classification be DSO/threshold-co-signed (the only defense against mislabeling)?
@@ -519,19 +522,20 @@ The realized-TPS oracle is the critical path. For extension synchronizers it is 
 8. **Realized-TPS oracle:** how is it measured and attested for invisible extension activity, and is there *any* verification beyond trust+slash?
 9. **DSO load:** per-round vs per-window reporting/burn — what's the capacity budget as the number of extension synchronizers grows?
 10. **CIP-0104 coexistence:** how does a party active on both Global and an extension synchronizer avoid double-earning app rewards?
+11. **Two editorial nits in the current revision:** the 3-tier base price now appears both in §6 *and* still under "Alternatives Considered"; and §6.3's formula prose says the price adjusts by "(regular, org-internal)" — omitting the new app-internal tier.
 
 ---
 
 ## 11. Numerical check of the CIP's worked examples (§4–§5)
 
-I re-derived every number from the formula (gross `= base · 0.5^log10(tps)`; duration `= 0.5 · 0.75^log2(years)`; net `= ×0.0975`; seconds/yr `= 31,536,000`; stake `= 20% of committed burn over the full duration`). Summary: **Examples 1, 3, and 4 are arithmetically self-consistent** (with two nits); **Example 2 contains a real error.** The reason 1 and 4 *look* wrong is two table-reconciliation traps, called out below.
+I re-derived every number from the formula (gross `= base · 0.5^log10(tps)`; duration `= 0.5 · 0.75^log2(years)`; net `= ×0.0975`; seconds/yr `= 31,536,000`; stake `= 20% of committed burn over the full duration`). Summary: **all four examples are now arithmetically self-consistent** (with two nits). *Example 2 contained a real 1yr/2yr error in the earlier draft; the current revision corrected it (now 3.13¢ / 0.30¢) — don't raise it.* The reason 1 and 4 *look* wrong is two table-reconciliation traps, called out below.
 
 | Example | Stated | Derived | Verdict |
 |---|---|---|---|
 | **1 — RWA** (1 TPS, 12mo) | 50¢/tx; 45¢ redistributed; $15.8m burn/12mo; ~$3m stake | 50.0¢; 45.1¢; $15.8m; $3.2m stake | ✅ correct |
 | **1b** (10 TPS, 24mo) | 18.75¢ (1.83¢ net); $24m stake | 18.75¢ (1.83¢); $23.7m | ✅ correct |
 | **2 — payments** (1000 TPS, 12mo) | 12.5¢→6.25¢ (0.61¢ net); $395m stake | 12.5¢→6.25¢ (0.61¢); $394m | ✅ correct |
-| **2 — "10k TPS, 1-year commitment → 2.34¢ (0.23¢ net)"** | 2.34¢ / 0.23¢ labeled **1-year** | 1yr = **3.13¢ / 0.30¢**; 2.34¢/0.23¢ is the **2-year** number | ❌ **error: 1yr/2yr mismatch** |
+| **2 — "10k TPS, 1-year commitment"** | current revision: **3.13¢ / 0.30¢** | 1yr = 3.13¢ / 0.30¢ | ✅ **fixed** (earlier draft had 2.34¢/0.23¢ = the 2-yr figures) |
 | **3 — bank-internal** (1 TPS, org 10¢) | 10¢ (0.9¢ net); $500k = 5M tx | 10¢ (**0.98¢** net); $500k ✓ | ⚠️ net should be ~0.98¢, not 0.9¢ |
 | **4 — trading venue** (1000 TPS, 12mo) | $1 → 6.25¢ (0.61¢ net) | $1 = Global regular (100¢); 6.25¢ (0.61¢) | ✅ correct |
 
@@ -539,7 +543,7 @@ I re-derived every number from the formula (gross `= base · 0.5^log10(tps)`; du
 
 **Why Example 4 *looks* wrong (it isn't):** the table says 1000 TPS gross = **12.5¢**, yet Example 4's "before" price is **$1**. The $1 is the **Global Synchronizer regular price (100¢)** — the throughput discount is *extension-only* (§6.1), so even at 1000 TPS the Global Synchronizer charges the flat regular price. The $1 is therefore the *Global* baseline, not the *extension* gross. (Presentational caveat: the example compresses two effects — moving to an extension synchronizer already cuts $1→12.5¢ (8×); the commitment only adds 12.5¢→6.25¢ (2×). And "$1" is itself a price this CIP *introduces*, not today's actual per-MB cost — so "reducing from $1" frames a new-model number as the status quo.)
 
-**The genuine error — Example 2:** "as throughput increases to 10k TPS, the cost per transaction **with a 1 year commitment** will drop to **2.34¢ (0.23¢ net)**." At 10k TPS the 1-year price is **3.13¢ (0.30¢ net)**; **2.34¢ / 0.23¢ are the 2-year values** (matching the table's 10k-TPS columns: 1yr 0.3¢, 2yr 0.23¢). Either the duration label or the figures are wrong.
+**Example 2 — corrected in the current revision.** The earlier draft read "10k TPS, **1-year** commitment → **2.34¢ (0.23¢ net)**," but 2.34¢/0.23¢ are the **2-year** figures. The current revision fixes this to **3.13¢ (0.30¢ net)**, matching the table's 10k-TPS 1-year columns. No longer an issue — noted only so we don't raise a stale point with DA.
 
 **Conceptual flag spanning 1 and 4:** the CIP only says the *throughput* discount is extension-only (§6.1); it never states whether the *duration* discount is. Example 1 (a **1 TPS** issuer staking for a duration discount) only makes economic sense if either (a) the duration discount is available on the Global Synchronizer too — in which case the issuer needs no extension synchronizer at all — or (b) running an extension synchronizer for a 1-TPS workload is worth it purely for the duration discount, which is dubious. This scope ambiguity should be resolved in the spec.
 

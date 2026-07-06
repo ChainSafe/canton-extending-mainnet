@@ -4,7 +4,7 @@
 **Author:** Sebastian Lindner (ChainSafe)
 **Subject CIP:** "Extending Mainnet: Tokenomics Alignment Across the Entire Canton Network" — Shaul Kfir (Digital Asset), Type: Tokenomics, Status: Draft
 **Reader profile:** distributed-systems / protocol engineer, *no prior Canton knowledge assumed*
-**Date:** 2026-06-30
+**Date:** 2026-06-30 · **Reconciled 2026-07-02** to the current CIP revision (three base prices; Example 2 corrected; §6.2 units now in years)
 
 
 ---
@@ -65,7 +65,7 @@ Composability does **not** come from a shared chain. It comes from two features:
 - A participant can connect to **many synchronizers at once.**
 - A contract can be **reassigned** from one synchronizer to another (atomic "move authority to network B"), as long as all its stakeholders are on both.
 
-So a buyer on network A and a seller on network B can do an atomic delivery-vs-payment by reassigning contracts to a common network. (Think native, atomic cross-rollup settlement — no bridge.) **One caveat we must verify with DA:** in the docs we reviewed, multi-network connectivity + reassignment was still behind an alpha feature flag, and there may be a rule preventing the native token from being reassigned off the Global Synchronizer. This matters for staking (§7).
+So a buyer on network A and a seller on network B can do an atomic delivery-vs-payment by reassigning contracts to a common network. (Think native, atomic cross-rollup settlement — no bridge.) **One caveat we must verify with DA:** in the docs we reviewed, multi-network connectivity + reassignment was still behind an alpha feature flag, and the native token may be *pinned* to the Global Synchronizer. If it is, staked CC is already where the validator set can see it (no reassignment needed); the open question is whether that pinning holds and whether cross-network reassignment for composability is generally available. This matters for staking (§7).
 
 ### 2.5 The token: Canton Coin, and "Burn-Mint Equilibrium" (BME)
 
@@ -76,7 +76,7 @@ The native token is **Canton Coin** (called **Amulet** in the code). Its economi
 
 **"Burn-Mint Equilibrium" means: at steady state, total mint ≈ total burn**, so the supply is roughly stable. This is the key to reading the CIP's pricing tables (next).
 
-> **The economics the CIP quotes — and a clarification.** The CIP advertises that a user's "net cost" is ~9.75% of the headline price, because ~90.25% of the burn comes back as rewards. A footnote in the draft decomposes it cleanly: of steady-state issuance, **90.25% → app + validator operators, 5% → development fund, 4.75% → Super Validators** (sums to 100%; the 5% + 4.75% = the 9.75% "net"). This is sound **as a steady-state equilibrium statement** (mint ≈ burn, ~10 years post-launch), and the CIP's design is specifically engineered so that an operator who runs a synchronizer can *capture* that 90.25% for its own activity. Two things to keep straight when we implement: (a) today's reward split is different (heavily weighted to Super Validators and still migrating toward this end state), so the "net cost" is a *future* steady-state figure; and (b) minting is **schedule-driven**, not "re-mint X% of each transaction's burn" — the 90.25% is what equilibrium *produces*, not a per-transaction formula. We must not encode a fixed re-mint ratio.
+> **The economics the CIP quotes — and a clarification.** The CIP advertises that a user's "net cost" is ~9.75% of the headline price, because ~90.25% of the burn comes back as rewards. The finer decomposition of that 9.75% — **5% development fund + 4.75% Super Validators** (5% + 4.75% = 9.75%) — is *ChainSafe's* inference; the CIP body states only 90.25%/9.75%, so present the split as ours, not DA's. This is sound **as a steady-state equilibrium statement** (mint ≈ burn, ~10 years post-launch), and the CIP's design is specifically engineered so that an operator who runs a synchronizer can *capture* that 90.25% for its own activity. Two things to keep straight when we implement: (a) today's reward split is different (heavily weighted to Super Validators and still migrating toward this end state), so the "net cost" is a *future* steady-state figure; and (b) minting is **schedule-driven**, not "re-mint X% of each transaction's burn" — the 90.25% is what equilibrium *produces*, not a per-transaction formula. We must not encode a fixed re-mint ratio.
 
 ### 2.6 Governance: an on-chain BFT council ("DSO")
 
@@ -84,7 +84,7 @@ The Super Validators govern collectively as the **DSO** (Decentralized Synchroni
 
 ### 2.7 "Splice" = the open-source economic layer
 
-All of the above — the token, the reward/minting logic, the governance state machine, the bandwidth-purchase flow, the node apps — is implemented in an open-source project called **Splice** (`github.com/hyperledger-labs/splice`), on top of the Canton protocol (`github.com/digital-asset/canton`, Digital Asset). Think of Splice as **the reference implementation of the network's economic and governance layer, written as smart contracts (Daml) + node services.** Most of this project's code lands in Splice; a few items touch the Canton protocol itself (DA-owned).
+All of the above — the token, the reward/minting logic, the governance state machine, the bandwidth-purchase flow, the node apps — is implemented in an open-source project called **Splice** (`github.com/canton-network/splice`), on top of the Canton protocol (`github.com/digital-asset/canton`, Digital Asset). Think of Splice as **the reference implementation of the network's economic and governance layer, written as smart contracts (Daml) + node services.** Most of this project's code lands in Splice; a few items touch the Canton protocol itself (DA-owned).
 
 ---
 
@@ -128,6 +128,7 @@ sequenceDiagram
   Note right of AR: priceClass + per-network PricingConfig = NEW.<br/>Everything below is REUSED
   AR->>AR: cost = curve(class,tps,dur) x bytes / amuletPrice
   AR->>AR: splitAndBurn — burn Canton Coin
+  Note over AR: also mints a ValidatorRewardCoupon over the burn
   AR->>MT: create/update (usdSpent, totalPurchased)
   MT-->>GD: observed on-ledger
   GD->>SEQ: SetTrafficPurchased(absolute balance)
@@ -142,7 +143,7 @@ sequenceDiagram
 
 Replace the single `USD_per_MB` with a **curve** driven by three inputs:
 
-- **Transaction class — two base prices.** A "regular" cross-organization transaction (e.g. a delivery-vs-payment between two firms) has a high base price; an "org-internal" transaction (all parties belong to the same operator) has a low base price. *(Illustrative: $1.00 vs $0.10.)*
+- **Transaction class — three base prices (a "utility discount").** A "regular" cross-organization transaction (e.g. a delivery-vs-payment between two firms) pays full price; an "app-internal" transaction (multiple parties within a single application, e.g. a stablecoin transfer) pays less; an "org-internal" transaction (all parties on validators run by the synchronizer's own operator) pays least. *(Illustrative: $1.00 / $0.30 / $0.10.)*
 - **Throughput discount.** The more sustained throughput a network commits to, the cheaper each transaction — a 50% cut per 10× throughput. **Available only on extension synchronizers** (to incentivize moving load off the Global Synchronizer and adding capacity).
 - **Duration discount.** Commit (and stake) for longer, pay less — 50% off for a 1-year commitment, deepening for 2- and 3-year commitments.
 
@@ -159,7 +160,7 @@ A worked feel for the numbers (regular base = $1.00):
 
 (At steady-state BME the *net* cost is ~9.75% of these, per §2.5.)
 
-> **Two diligence notes for DA** (we checked the draft's own examples arithmetically): (1) the duration-discount **formula as written in §6.2 does not reproduce the published table** — the table only matches if duration is measured in *years* (not months) and the per-doubling factor is the *complement* of the stated constant; worth a one-line spec fix. (2) **Example 2 has a mislabel:** "10k tx/s, *1-year* commitment → 2.34¢ (0.23¢ net)" are actually the *2-year* numbers (1-year is 3.13¢ / 0.30¢). Examples 1, 3, 4 check out. These are editorial, not conceptual — but flagging shows we've read it carefully.
+> **Diligence note for DA** (we checked the draft's own examples arithmetically): the duration-discount **formula in §6.2 still doesn't reproduce the published table.** The current revision fixed the units (duration now in *years*), but the per-doubling factor is still written as the stated constant where the table needs its *complement* (0.75, not 0.25) — a one-line spec fix. *(The earlier draft's Example 2 mislabel — 2.34¢/0.23¢ tagged as 1-year — has already been corrected to 3.13¢/0.30¢ in this revision, so it's no longer an issue.)* Examples 1, 3, 4 check out.
 
 ### 4.2 An org-internal price cap
 
@@ -294,7 +295,7 @@ sequenceDiagram
   end
 ```
 
-4. **Commitment staking.** A stake contract wrapping the existing time-lock; a per-round job that burns the throughput shortfall from the stake; a replenish-or-forfeit lifecycle copied from an existing pattern. **Two new primitives required:** the throughput oracle (below) and a *conditional partial burn of locked principal* — which today **does not exist** and likely needs a Canton-protocol change (DA).
+4. **Commitment staking.** A stake contract wrapping the existing time-lock; a per-round job that burns the throughput shortfall from the stake; a replenish-or-forfeit lifecycle copied from an existing pattern. **Two new primitives required:** the throughput oracle (below) and a *conditional partial burn of locked principal* — which today **does not exist**; it's a Splice Amulet (Daml) change that still needs DA/community + a DSO vote to activate.
 
 ```mermaid
 sequenceDiagram
@@ -308,7 +309,7 @@ sequenceDiagram
   participant RTA as RealizedThroughputAttestation (NEW)
   participant DSO as DSO (2/3 BFT)
 
-  OP->>LOCK: lock 20% stake (holders include DSO)
+  OP->>LOCK: lock 20% stake (DSO already co-signs via the Amulet)
   OP->>CS: create commitment (committedTps, duration)
   Note over CS,GD: while Active and above threshold
   GD->>SEQ: SetTrafficPurchased (discounted balance)
@@ -373,8 +374,8 @@ These are what the kickoff should really be about.
 
 These are the items only DA / the protocol can answer, and they gate the open-source work:
 
-1. **Can a privileged, condition-gated choice burn *part* of a locked principal** (no re-mint, no reward), to implement the staking shortfall-burn? This is new authorization in the Canton/Splice token layer. **Go/no-go for staking as specified.**
-2. **Can the native token be reassigned to the Global Synchronizer** so the validator set can witness/burn an extension operator's stake — and is multi-network reassignment generally available in the target Canton version? If not, the "one token economy" model has to change. **Go/no-go for cross-network staking.**
+1. **Can a privileged, condition-gated choice burn *part* of a locked principal** (no re-mint, no reward), to implement the staking shortfall-burn? This is new authorization in the Splice Amulet (Daml) layer — upstream + DSO-activated, not something ChainSafe can ship alone. **Go/no-go for staking as specified.**
+2. **Where does staked token live, and is reassignment GA?** If the native token is pinned to the Global Synchronizer, the validator set can already witness/burn an extension operator's stake with no reassignment — confirm that. Separately, cross-network *composability* still needs multi-network reassignment to be generally available (not alpha) in the target Canton version. **Go/no-go for cross-network staking + composability.**
 3. **BME semantics:** is report-driven minting **additive** to the issuance curve (expands total issuance — changes the supply cap and equilibrium) or **drawn from** the existing budget? This is a tokenomics decision for DA/GSF, and everything in §4.4 depends on it.
 4. **Trust model:** is DA comfortable with **self-attested-bounded-by-stake** for off-Global activity, or do they want a verification path (multi-SV attestation, audit cross-checks)? An earlier approved change deliberately *removed* self-reporting elsewhere — so this is a philosophical reversal worth their explicit buy-in.
 5. **Ownership split:** which pieces DA takes upstream (the two protocol items above) vs. which the community/ChainSafe builds in Splice.
@@ -387,7 +388,7 @@ These are the items only DA / the protocol can answer, and they gate the open-so
 - The two protocol go/no-gos (§8.1, §8.2) — schedule these as short feasibility spikes against the source first; they can sink large parts of the design.
 - The BME additive-vs-curve decision (§8.3).
 - Smooth vs tiered curve; the per-tx↔per-byte conversion; the precise definition of "org-internal."
-- The two editorial fixes in the draft (the §6.2 formula and Example 2).
+- The §6.2 formula fix (units are already corrected; the per-doubling factor still needs it). *(Example 2's mislabel is already fixed in the current revision.)*
 
 **Phasing (each phase gated on the prior):**
 - **Phase 0 — Spec & feasibility:** resolve the above; produce a ratified spec + parameter governance-tier list.
