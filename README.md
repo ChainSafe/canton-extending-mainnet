@@ -1,4 +1,4 @@
-# extending-mainnet
+# canton-extending-mainnet
 
 ChainSafe implementation work for the Canton CIP **"Extending Mainnet: Tokenomics Alignment Across the Entire Canton Network"** (Shaul Kfir, Digital Asset). Design docs live in `ChainSafe/canton-cip-docs`; this repo is the code.
 

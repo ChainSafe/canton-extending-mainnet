@@ -1,0 +1,5 @@
+[submodule "splice"]
+	path = splice
+	url = https://github.com/canton-network/splice.git
+	branch = 0.6.11
+	shallow = true

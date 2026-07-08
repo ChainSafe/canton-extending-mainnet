@@ -5,3 +5,6 @@
 # OS / editor
 .DS_Store
 *.swp
+
+# Claude Code session state (auto-generated permission grants, local settings)
+.claude/
