@@ -1,0 +1,118 @@
+-- | Shadow-mode pricing engine for the "Extending Mainnet: Tokenomics Alignment" CIP.
+--
+-- This is an OFF-LEDGER, pure-Daml implementation of the CIP Section 6 discount
+-- curve. It has NO dependency on splice-amulet: the point is to validate the math
+-- and reproduce the CIP Section 5 table before any on-ledger wiring. When we later
+-- wire per-synchronizer pricing into AmuletConfig, this record/function move into a
+-- package that depends on splice-amulet.
+--
+-- Key correction baked in: the CIP Section 6.2 duration factor is written as
+-- Di * D ^ log2(d), but that does NOT reproduce the published table. The table is
+-- reproduced by Di * (1 - D) ^ log2(d) (a 25% *incremental* discount per doubling).
+-- See Test.Section5Table.
+module SyncPricing where
+
+import DA.Math (exp, log, logBase)
+
+-- | The three transaction classes the current CIP revision prices (100c / 30c / 10c).
+data PriceClass
+  = Regular       -- ^ multi-organization / composed (e.g. a cross-org DvP)
+  | AppInternal   -- ^ multiple parties within a single application (e.g. a stablecoin transfer)
+  | OrgInternal   -- ^ all parties hosted on validators run by the synchronizer operator
+  deriving (Eq, Show, Enum, Bounded)
+
+-- | Smooth (continuous log) curve vs a tiered (per-decade / per-doubling) variant.
+-- We recommend Tiered for the eventual on-ledger version to avoid Daml Numeric
+-- rounding drift; Smooth mirrors the CIP formula as literally written (modulo the
+-- (1 - D) fix).
+data DiscountMode = Smooth | Tiered
+  deriving (Eq, Show)
+
+-- | Per-synchronizer pricing config. Off-ledger here; not yet wired into AmuletConfig.
+data SyncPricingConfig = SyncPricingConfig with
+    regularBaseCents : Decimal          -- ^ CIP: 100c
+    appInternalBaseCents : Decimal      -- ^ CIP: 30c
+    orgInternalBaseCents : Decimal      -- ^ CIP: 10c
+    throughputT : Decimal               -- ^ fraction PAID per 10x TPS (CIP T = 0.5)
+    durationDi : Decimal                -- ^ initial duration discount factor at 1yr (CIP Di = 0.5)
+    durationD : Decimal                 -- ^ incremental discount per 2x duration (CIP D = 0.25); factor uses (1 - D)
+    isExtensionSynchronizer : Bool      -- ^ throughput discount is extension-only; forced to identity on Global
+    mode : DiscountMode
+    -- carried for later stages, unused by the curve:
+    designatedValidators : [Text]       -- ^ up to 5, for org-internal classification (CIP 6.4)
+    orgInternalCapUsdCents : Decimal    -- ^ $500k cap, in cents
+  deriving (Eq, Show)
+
+-- | Illustrative config using the CIP's example parameters.
+defaultConfig : SyncPricingConfig
+defaultConfig = SyncPricingConfig with
+    regularBaseCents = 100.0
+    appInternalBaseCents = 30.0
+    orgInternalBaseCents = 10.0
+    throughputT = 0.5
+    durationDi = 0.5
+    durationD = 0.25
+    isExtensionSynchronizer = True
+    mode = Smooth
+    designatedValidators = []
+    orgInternalCapUsdCents = 50000000.0
+
+basePriceCents : SyncPricingConfig -> PriceClass -> Decimal
+basePriceCents cfg cls = case cls of
+  Regular -> cfg.regularBaseCents
+  AppInternal -> cfg.appInternalBaseCents
+  OrgInternal -> cfg.orgInternalBaseCents
+
+-- | a ** x for a > 0, via exp/log (Daml has no Decimal (**)); `log` is natural log.
+powC : Decimal -> Decimal -> Decimal
+powC a x = exp (x * log a)
+
+-- | Integer power for the tiered variant (n >= 0).
+powInt : Decimal -> Int -> Decimal
+powInt b n = if n <= 0 then 1.0 else b * powInt b (n - 1)
+
+-- | floor(log10 n) for n >= 1 (number of full decades above 1), via multiplication.
+-- (Top-level recursion; Daml forbids recursive local `where` bindings.)
+intLog10 : Int -> Int
+intLog10 n = log10Go n 0 10
+
+log10Go : Int -> Int -> Int -> Int
+log10Go n acc p = if p > n then acc else log10Go n (acc + 1) (p * 10)
+
+-- | floor(log2 n) for n >= 1 (number of full doublings above 1), via multiplication.
+intLog2 : Int -> Int
+intLog2 n = log2Go n 0 2
+
+log2Go : Int -> Int -> Int -> Int
+log2Go n acc p = if p > n then acc else log2Go n (acc + 1) (p * 2)
+
+-- | Throughput discount factor. Extension-synchronizer-only: forced to 1.0 on the
+-- Global Synchronizer. Smooth = T ^ log10(tps); Tiered = T ^ (full decades).
+throughputFactor : SyncPricingConfig -> Int -> Decimal
+throughputFactor cfg tps
+  | not cfg.isExtensionSynchronizer = 1.0
+  | tps <= 1 = 1.0
+  | otherwise = case cfg.mode of
+      Smooth -> powC cfg.throughputT (logBase 10.0 (intToDecimal tps))
+      Tiered -> powInt cfg.throughputT (intLog10 tps)
+
+-- | Duration discount factor. No commitment (years <= 0) => 1.0 (gross price).
+-- Committed: Di * (1 - D) ^ log2(years). Smooth uses the continuous exponent;
+-- Tiered uses full doublings.
+durationFactor : SyncPricingConfig -> Int -> Decimal
+durationFactor cfg years
+  | years <= 0 = 1.0
+  | otherwise = cfg.durationDi * case cfg.mode of
+      Smooth -> powC (1.0 - cfg.durationD) (logBase 2.0 (intToDecimal years))
+      Tiered -> powInt (1.0 - cfg.durationD) (intLog2 years)
+
+-- | Gross price in cents for a class, at a sustained TPS, with a commitment of
+-- `years` (0 = no commitment).
+priceCents : SyncPricingConfig -> PriceClass -> Int -> Int -> Decimal
+priceCents cfg cls tps years =
+  basePriceCents cfg cls * throughputFactor cfg tps * durationFactor cfg years
+
+-- | Illustrative steady-state BME net cost: ~9.75% of gross (5% dev fund + 4.75% SV
+-- per the CIP footnote). Presentational only; NOT a protocol re-mint rule.
+netCents : Decimal -> Decimal
+netCents gross = gross * 0.0975

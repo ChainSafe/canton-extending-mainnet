@@ -1,0 +1,7 @@
+# Daml build artifacts
+.daml/
+*.dar
+
+# OS / editor
+.DS_Store
+*.swp

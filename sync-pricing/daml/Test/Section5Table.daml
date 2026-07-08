@@ -1,0 +1,97 @@
+-- | Acceptance test: reproduce the CIP Section 5 pricing table from the curve in
+-- SyncPricing, and demonstrate the Section 6.2 factor bug.
+--
+-- Tiered mode reproduces the tabulated points EXACTLY (integer decade / doubling
+-- exponents, so pure Decimal multiplication). Smooth mode uses transcendental
+-- exp/log, so it is asserted within a small tolerance.
+module Test.Section5Table where
+
+import Daml.Script
+import DA.Assert ((===))
+import SyncPricing
+
+-- Tolerance for the smooth (transcendental) curve, in cents.
+tol : Decimal
+tol = 0.05
+
+approx : Decimal -> Decimal -> Bool
+approx a b = abs (a - b) < tol
+
+ext : SyncPricingConfig
+ext = defaultConfig                                   -- Smooth, isExtensionSynchronizer = True
+
+extTiered : SyncPricingConfig
+extTiered = defaultConfig with mode = Tiered
+
+globalSync : SyncPricingConfig
+globalSync = defaultConfig with isExtensionSynchronizer = False
+
+-- CIP Section 5 "Gross tx price" ladder (no commitment), Regular class, smooth curve.
+testGrossThroughputSmooth : Script ()
+testGrossThroughputSmooth = do
+  assertMsg "1 TPS = 100c"      (approx (priceCents ext Regular 1 0) 100.0)
+  assertMsg "10 TPS = 50c"      (approx (priceCents ext Regular 10 0) 50.0)
+  assertMsg "100 TPS = 25c"     (approx (priceCents ext Regular 100 0) 25.0)
+  assertMsg "1000 TPS = 12.5c"  (approx (priceCents ext Regular 1000 0) 12.5)
+  assertMsg "10000 TPS = 6.25c" (approx (priceCents ext Regular 10000 0) 6.25)
+
+-- Tiered reproduces the same ladder EXACTLY.
+testGrossThroughputTiered : Script ()
+testGrossThroughputTiered = do
+  priceCents extTiered Regular 1 0 === 100.0
+  priceCents extTiered Regular 10 0 === 50.0
+  priceCents extTiered Regular 100 0 === 25.0
+  priceCents extTiered Regular 1000 0 === 12.5
+  priceCents extTiered Regular 10000 0 === 6.25
+
+-- Duration ladder at 1 TPS, Regular. 1yr -> 50c, 2yr -> 37.5c, 3yr -> ~31.69c
+-- (matching the table's discounted-net 4.88 / 3.66 / 3.09 at x0.0975).
+testDurationSmooth : Script ()
+testDurationSmooth = do
+  assertMsg "1yr = 50c"    (approx (priceCents ext Regular 1 1) 50.0)
+  assertMsg "2yr = 37.5c"  (approx (priceCents ext Regular 1 2) 37.5)
+  assertMsg "3yr ~ 31.69c" (approx (priceCents ext Regular 1 3) 31.69)
+
+-- Tiered duration ladder: 1yr and 2yr exact; 3yr rounds down to 1 doubling (= 2yr).
+testDurationTiered : Script ()
+testDurationTiered = do
+  priceCents extTiered Regular 1 1 === 50.0
+  priceCents extTiered Regular 1 2 === 37.5
+  priceCents extTiered Regular 1 3 === 37.5
+
+-- CIP worked examples.
+testExamples : Script ()
+testExamples = do
+  -- Example 2: 1000 TPS + 12-month commitment -> 6.25c gross
+  assertMsg "ex2: 1000 TPS 1yr = 6.25c" (approx (priceCents ext Regular 1000 1) 6.25)
+  -- Example 1b: 10 TPS + 24-month commitment -> 18.75c
+  assertMsg "ex1b: 10 TPS 2yr = 18.75c" (approx (priceCents ext Regular 10 2) 18.75)
+  -- Example 4: on the Global Synchronizer there is no throughput discount, so 1000 TPS
+  -- still costs the regular 100c ("$1 before") regardless of TPS.
+  priceCents globalSync Regular 1000 0 === 100.0
+  -- Example 3: org-internal base = 10c at 1 TPS.
+  assertMsg "ex3: org-internal 1 TPS = 10c" (approx (priceCents ext OrgInternal 1 0) 10.0)
+
+-- Three base prices per class (current CIP revision: 100 / 30 / 10).
+testBasePrices : Script ()
+testBasePrices = do
+  priceCents extTiered Regular 1 0 === 100.0
+  priceCents extTiered AppInternal 1 0 === 30.0
+  priceCents extTiered OrgInternal 1 0 === 10.0
+
+-- Illustrative steady-state BME net (9.75%): the table's "Net" column.
+testNet : Script ()
+testNet = do
+  netCents 100.0 === 9.75      -- 1 TPS net
+  netCents 12.5 === 1.21875    -- 1000 TPS net ~ 1.22c
+
+-- The Section 6.2 factor bug, made concrete: the formula AS WRITTEN in the CIP,
+-- Di * D ^ log2(d), gives the wrong 2-year multiplier; our (1 - D) reproduces the
+-- table. At 2 years, Regular: correct = 100*0.5*0.75 = 37.5c; naive = 100*0.5*0.25 = 12.5c.
+testSection62FactorBug : Script ()
+testSection62FactorBug = do
+  let ours = priceCents ext Regular 1 2                         -- uses (1 - D)
+  let naive = 100.0 * ext.durationDi * powC ext.durationD 1.0   -- CIP-as-written: Di * D^1
+  assertMsg "our 2yr Regular = 37.5c (matches table)" (approx ours 37.5)
+  assertMsg "naive (D) 2yr = 12.5c (the bug)"         (approx naive 12.5)
+  assertMsg "our value != naive"                      (not (approx ours naive))
