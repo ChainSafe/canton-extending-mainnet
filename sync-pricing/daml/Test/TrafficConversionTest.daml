@@ -1,0 +1,125 @@
+-- | Acceptance test for the cents/tx <-> bytes <-> CC conversion harness.
+--
+-- Two independent sources of ground truth:
+--
+--   * Canton's own EventCostCalculatorTest (splice/canton/.../traffic/
+--     EventCostCalculatorTest.scala) pins the integer byte-cost vectors.
+--   * The running Splice LocalNet 0.6.11 pins the pricing chain: the values in
+--     `liveFee`/`liveTraffic` were read from the Scan API of the live stack, and
+--     `testLiveBuyReproduction` reproduces the exact on-ledger traffic purchase
+--     observed in the splice logs (1,200,000 bytes -> $20.004 -> 4000.8 CC).
+module Test.TrafficConversionTest where
+
+import Daml.Script
+import DA.Assert ((===))
+import TrafficConversion
+import SyncPricing (defaultConfig, PriceClass(..))
+
+-- Tolerance (in the unit under test) for the analytical inverse / CIP bridge,
+-- where Daml's fixed-point rounding makes exact equality fragile.
+approxD : Decimal -> Decimal -> Decimal -> Bool
+approxD tol a b = abs (a - b) < tol
+
+-- ---------------------------------------------------------------------------
+-- Live LocalNet 0.6.11 parameters (read from the running Scan API, 2026-07-08)
+-- ---------------------------------------------------------------------------
+
+-- From GET /api/scan/v0/dso (AmuletRules config) and the open mining round:
+--   extraTrafficPrice = 16.67 $/MB, readVsWriteScalingFactor = 4,
+--   minTopupAmount = 200000 bytes, amuletPrice = 0.005 $/CC, round trafficPrice = null.
+-- baseEventCost is the Canton default (0); LocalNet does not override it.
+
+liveFee : FeeParams
+liveFee = FeeParams with
+    extraTrafficPrice = 16.67
+    roundTrafficPrice = None      -- round price null on LocalNet -> config wins
+    amuletPrice = 0.005
+
+liveTraffic : TrafficParams
+liveTraffic = TrafficParams with
+    readVsWriteScalingFactor = 4
+    baseEventCost = 0
+
+-- ---------------------------------------------------------------------------
+-- 1. EventCostCalculator ground-truth vectors (from Canton's own unit test)
+-- ---------------------------------------------------------------------------
+
+testEventCostVectors : Script ()
+testEventCostVectors = do
+  -- "calculate cost correctly": 5 bytes, 2 recipients, multiplier 5000
+  --   readCost = 5 * 2 * 5000 / 10000 = 5, finalCost = 10
+  let tp5000 = TrafficParams with readVsWriteScalingFactor = 5000, baseEventCost = 0
+  envelopeReadCost tp5000 (Envelope with payloadBytes = 5, recipients = 2) === 5
+  envelopeCost     tp5000 (Envelope with payloadBytes = 5, recipients = 2) === 10
+
+  -- "cost computation does not overflow": 25000 bytes, 500 recipients, multiplier 200
+  --   readCost = 25000 * 500 * 200 / 10000 = 250000, finalCost = 275000
+  let tp200 = TrafficParams with readVsWriteScalingFactor = 200, baseEventCost = 0
+  envelopeReadCost tp200 (Envelope with payloadBytes = 25000, recipients = 500) === 250000
+  envelopeCost     tp200 (Envelope with payloadBytes = 25000, recipients = 500) === 275000
+
+  -- "respect minimum event cost": finalCost 10 + baseEventCost 350 = 360
+  let tpBase = TrafficParams with readVsWriteScalingFactor = 5000, baseEventCost = 350
+  eventCostBytes tpBase [Envelope with payloadBytes = 5, recipients = 2] === 360
+
+-- The integer floor matters at the live scaling factor of 4: a small unicast
+-- message pays zero read cost, while a broadcast to many recipients does not.
+testLiveFlooring : Script ()
+testLiveFlooring = do
+  -- 1000 bytes, 1 recipient: readCost = 1000 * 1 * 4 / 10000 = 0 (floored)
+  envelopeCost liveTraffic (Envelope with payloadBytes = 1000, recipients = 1) === 1000
+  -- 1000 bytes, 100 recipients: readCost = 1000 * 100 * 4 / 10000 = 40
+  envelopeCost liveTraffic (Envelope with payloadBytes = 1000, recipients = 100) === 1040
+  -- an event summing several envelopes
+  eventCostBytes liveTraffic
+    [ Envelope with payloadBytes = 1000, recipients = 1
+    , Envelope with payloadBytes = 1000, recipients = 100
+    ] === 2040
+
+-- ---------------------------------------------------------------------------
+-- 2/3. Pricing chain reproduces the observed on-ledger traffic purchase
+-- ---------------------------------------------------------------------------
+
+testLiveBuyReproduction : Script ()
+testLiveBuyReproduction = do
+  -- The validator's TopupMemberTrafficTrigger bought 1,200,000 bytes; the ledger
+  -- tx spent 4000.8 CC. computeSynchronizerFees over the live params must agree.
+  bytesToUsd    liveFee 1200000 === 20.004     -- 1.2 MB * 16.67 $/MB
+  usdToAmulet   liveFee 20.004  === 4000.8     -- / 0.005 $/CC
+  bytesToUsdCents liveFee 1200000 === 2000.4
+
+  let cost = txCost liveTraffic liveFee [Envelope with payloadBytes = 1200000, recipients = 0]
+  -- recipients = 0 so read cost is 0 and metered bytes == payload: the purchase amount
+  cost.bytes === 1200000
+  cost.usd === 20.004
+  cost.amulet === 4000.8
+
+-- Round trafficPrice takes precedence over the config extraTrafficPrice.
+testRoundPricePrecedence : Script ()
+testRoundPricePrecedence = do
+  effectiveTrafficPrice liveFee === 16.67                              -- None -> config
+  let overridden = liveFee with roundTrafficPrice = Some 25.0
+  effectiveTrafficPrice overridden === 25.0                            -- Some -> round wins
+  bytesToUsd overridden 1000000 === 25.0
+
+-- ---------------------------------------------------------------------------
+-- Inversion: cents/tx -> bytes, and the CIP bridge
+-- ---------------------------------------------------------------------------
+
+testInversionRoundTrip : Script ()
+testInversionRoundTrip = do
+  -- Exact round trip: 1,200,000 bytes -> 2000.4 cents -> 1,200,000 bytes.
+  usdCentsToBytes liveFee (bytesToUsdCents liveFee 1200000) === 1200000.0
+  -- cents -> CC matches the direct amulet cost.
+  usdCentsToAmulet liveFee 2000.4 === 4000.8
+
+testCipBridge : Script ()
+testCipBridge = do
+  -- CIP Regular class, 1 TPS, no commitment = 100c. At the live price of
+  -- 16.67 $/MB that is (1.00 / 16.67) MB ~= 59988 bytes of synchronizer traffic.
+  let bytes = cipPriceBytes defaultConfig liveFee Regular 1 0
+  assertMsg "100c ~= 59988 traffic bytes" (approxD 1.0 bytes 59988.0024)
+  -- and in CC: 100c = $1.00 / 0.005 = 200 CC.
+  cipPriceAmulet defaultConfig liveFee Regular 1 0 === 200.0
+  -- OrgInternal (10c) is a tenth of that.
+  cipPriceAmulet defaultConfig liveFee OrgInternal 1 0 === 20.0

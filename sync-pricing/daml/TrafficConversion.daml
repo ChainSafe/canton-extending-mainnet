@@ -1,0 +1,151 @@
+-- | Cents/tx <-> bytes <-> Canton Coin conversion harness.
+--
+-- The shadow pricing engine in "SyncPricing" prices a transaction in USD *cents*
+-- (per class, TPS, commitment). The live Canton/Splice protocol charges for a
+-- transaction in *bytes of synchronizer traffic*, which are then priced into USD
+-- and Amulet (CC). This module ports that byte-cost + pricing chain so the two
+-- worlds can be compared apples-to-apples, and so a CIP cents/tx target can be
+-- converted to the byte/CC quantities the protocol actually meters.
+--
+-- Everything here is a faithful, executable port of real source (no Splice
+-- dependency; pure Daml, like SyncPricing):
+--
+--   1. tx -> bytes   Canton EventCostCalculator (protocol v34+), integer semantics
+--                    splice/canton/.../sequencing/traffic/EventCostCalculator.scala
+--   2. bytes -> USD  Splice computeSynchronizerFees
+--                    splice/daml/splice-amulet/daml/Splice/AmuletRules.daml:1719
+--   3. USD -> CC     divide by the open mining round's amuletPrice (same function)
+--
+-- Live LocalNet 0.6.11 values that parameterize the ground-truth test are pulled
+-- from the running Scan API (see Test.TrafficConversionTest.liveFee/liveTraffic).
+module TrafficConversion where
+
+import DA.Optional (fromOptional)
+import SyncPricing (SyncPricingConfig, PriceClass, priceCents)
+
+-- ---------------------------------------------------------------------------
+-- 1. tx -> bytes : Canton EventCostCalculator (integer arithmetic)
+-- ---------------------------------------------------------------------------
+
+-- | One serialized envelope in the batch. `payloadBytes` is the uncompressed
+-- serialized size (EventCostCalculator.payloadSize). `recipients` is the
+-- *resolved* recipient count: for a group recipient, the number of members in
+-- the group; a direct member recipient counts as 1 (computeEnvelopeCost).
+data Envelope = Envelope with
+    payloadBytes : Int
+    recipients : Int
+  deriving (Eq, Show)
+
+-- | Sequencer traffic-cost parameters (protocol v34+).
+--
+-- `readVsWriteScalingFactor` is Canton's `costMultiplier`, specified in parts
+-- per 10,000 (DecentralizedSynchronizer.daml:39). `baseEventCost` is the Canton
+-- SequencerTrafficConfig floor added once per event; its Canton default is 0
+-- (TrafficControlParameters.DefaultBaseEventCost) and LocalNet does not override
+-- it. It is NOT part of Splice's AmuletConfig.
+data TrafficParams = TrafficParams with
+    readVsWriteScalingFactor : Int
+    baseEventCost : Int
+  deriving (Eq, Show)
+
+-- | Read cost of a single envelope, matching EventCostCalculator.computeEnvelopeCost:
+--   readCost = writeCost * recipientsSize * costMultiplier / 10000
+-- Canton does this in Long with division truncated toward zero. All terms are
+-- >= 0, so truncation = floor. The integer product fits in Int64 and dividing
+-- it by 10000 yields at most 4 decimals, so the Decimal division below is exact
+-- and `truncate` reproduces Canton's result bit-for-bit. This is the flooring
+-- the CIP's real-valued `byteSize * recipients * factor/10000` glosses over.
+envelopeReadCost : TrafficParams -> Envelope -> Int
+envelopeReadCost tp e =
+  truncate (intToDecimal (e.payloadBytes * e.recipients * tp.readVsWriteScalingFactor) / 10000.0)
+
+-- | finalCost of a single envelope = writeCost + readCost.
+envelopeCost : TrafficParams -> Envelope -> Int
+envelopeCost tp e = e.payloadBytes + envelopeReadCost tp e
+
+-- | Total event cost in bytes = sum of per-envelope finalCosts + baseEventCost,
+-- matching EventCostCalculator.computeEventCost. This is the number of traffic
+-- bytes a transaction consumes (and hence what a top-up must cover).
+eventCostBytes : TrafficParams -> [Envelope] -> Int
+eventCostBytes tp envs =
+  foldl (\acc e -> acc + envelopeCost tp e) 0 envs + tp.baseEventCost
+
+-- ---------------------------------------------------------------------------
+-- 2/3. bytes -> USD -> CC : Splice computeSynchronizerFees
+-- ---------------------------------------------------------------------------
+
+-- | Pricing inputs from the AmuletRules config and the open mining round.
+--
+-- `roundTrafficPrice` takes precedence over the config `extraTrafficPrice` when
+-- set (AmuletRules.daml:1724, `fromOptional config round`). On LocalNet the round
+-- price is None, so the config's $/MB is used.
+data FeeParams = FeeParams with
+    extraTrafficPrice : Decimal          -- ^ config.fees.extraTrafficPrice, in $/MB
+    roundTrafficPrice : Optional Decimal -- ^ open round trafficPrice, in $/MB (wins if Some)
+    amuletPrice : Decimal                -- ^ open round amuletPrice, in $/CC
+  deriving (Eq, Show)
+
+-- | The traffic price actually applied: round price if present, else config.
+effectiveTrafficPrice : FeeParams -> Decimal
+effectiveTrafficPrice fp = fromOptional fp.extraTrafficPrice fp.roundTrafficPrice
+
+-- | bytes -> USD. computeSynchronizerFees: trafficAmount / 1e6 * extraTrafficPrice.
+-- (bytes / 1e6 = megabytes; extraTrafficPrice is $/MB.)
+bytesToUsd : FeeParams -> Int -> Decimal
+bytesToUsd fp bytes = intToDecimal bytes / 1000000.0 * effectiveTrafficPrice fp
+
+-- | USD -> Amulet (CC). computeSynchronizerFees: trafficCostUsd / amuletPrice.
+usdToAmulet : FeeParams -> Decimal -> Decimal
+usdToAmulet fp usd = usd / fp.amuletPrice
+
+-- | bytes -> USD cents. Convenience for comparing against SyncPricing.priceCents.
+bytesToUsdCents : FeeParams -> Int -> Decimal
+bytesToUsdCents fp bytes = bytesToUsd fp bytes * 100.0
+
+-- ---------------------------------------------------------------------------
+-- End-to-end: a transaction's cost in every unit
+-- ---------------------------------------------------------------------------
+
+data TxCost = TxCost with
+    bytes : Int         -- ^ metered traffic (eventCostBytes)
+    usd : Decimal       -- ^ dollars
+    usdCents : Decimal  -- ^ cents (the SyncPricing unit)
+    amulet : Decimal    -- ^ Canton Coin
+  deriving (Eq, Show)
+
+-- | Full forward chain: transaction envelopes -> cost in bytes, USD, cents, CC.
+txCost : TrafficParams -> FeeParams -> [Envelope] -> TxCost
+txCost tp fp envs =
+  let bytes = eventCostBytes tp envs
+      usd = bytesToUsd fp bytes
+  in TxCost with
+       bytes
+       usd
+       usdCents = usd * 100.0
+       amulet = usdToAmulet fp usd
+
+-- ---------------------------------------------------------------------------
+-- Inversion: CIP cents/tx -> bytes / CC  (the "cents/tx-to-bytes" direction)
+-- ---------------------------------------------------------------------------
+
+-- | Cents -> the *ideal* (fractional) traffic-byte count that the current price
+-- would meter for that many cents. Inverse of bytesToUsdCents:
+--   cents = bytes/1e6 * price * 100  =>  bytes = (cents/100) / price * 1e6
+-- On-ledger traffic is integer, so a real deployment would round/clamp to
+-- minTopupAmount; this returns the exact real value for calibration.
+usdCentsToBytes : FeeParams -> Decimal -> Decimal
+usdCentsToBytes fp cents = cents / 100.0 / effectiveTrafficPrice fp * 1000000.0
+
+-- | Cents -> Amulet (CC), independent of byte size.
+usdCentsToAmulet : FeeParams -> Decimal -> Decimal
+usdCentsToAmulet fp cents = usdToAmulet fp (cents / 100.0)
+
+-- | Bridge to the CIP curve: the traffic-byte quantity a CIP class price maps to
+-- at the live extraTrafficPrice. This answers "if the CIP says this tx should
+-- cost N cents, how many traffic bytes is that under today's protocol pricing?"
+cipPriceBytes : SyncPricingConfig -> FeeParams -> PriceClass -> Int -> Int -> Decimal
+cipPriceBytes cfg fp cls tps years = usdCentsToBytes fp (priceCents cfg cls tps years)
+
+-- | Bridge to the CIP curve, in Amulet (CC).
+cipPriceAmulet : SyncPricingConfig -> FeeParams -> PriceClass -> Int -> Int -> Decimal
+cipPriceAmulet cfg fp cls tps years = usdCentsToAmulet fp (priceCents cfg cls tps years)
