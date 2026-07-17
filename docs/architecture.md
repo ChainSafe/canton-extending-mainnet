@@ -34,6 +34,7 @@ auto-topup, Scan endpoints. See `planning/extending-mainnet-work-plan.md` (WS1).
   archived `canton-cip-docs`).
 - `planning/` — epics/issues across both repos.
 - `localnet.md` — how to run the local end-to-end environment.
+- `testing.md` — the 3-tier testing strategy (Daml Script + Scala integration in the fork; LocalNet e2e here).
 - `../history/` — RFCs, meetings, experiments, incidents, changelog.
 
 ## Deployment & ops (target)
