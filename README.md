@@ -1,94 +1,77 @@
 # canton-extending-mainnet
 
-ChainSafe's working repo for implementing the Canton CIP **"Extending Mainnet: Tokenomics
-Alignment Across the Entire Canton Network"** (Shaul Kfir, Digital Asset).
+**Control center** for ChainSafe's work on the Canton CIP *"Extending Mainnet: Tokenomics
+Alignment Across the Entire Canton Network"* (Shaul Kfir, Digital Asset).
 
-This is the **control center** for the initiative: it holds the **tooling, harnesses, analysis,
-planning, and docs** we build to *do* the implementation, plus coordination with Digital Asset —
-but almost no product code. The actual code lives in the **`splice/` submodule** (the
-`ChainSafe/splice` fork). **Agents: start with [`AGENTS.md`](AGENTS.md)** — the sibling-project map
-and navigation guide. Two repos are in play (a third is archived):
+This repo has **almost no product code**. It **orchestrates, documents, and navigates** the
+initiative: the plans, the architecture, the LocalNet harness, the analysis, the deployment specs,
+and the coordination with Digital Asset. The actual code lives in the **`splice/` submodule** (the
+`ChainSafe/splice` fork).
+
+**Start here:** [`AGENTS.md`](AGENTS.md) — the sibling-project map and navigation guide.
+
+## What we're building
+
+Generalize Canton's Global-Synchronizer traffic purchase to **dedicated** (non-global)
+synchronizers: burn Canton Coin on the global sync keyed by a dedicated sync id, and that sync's
+**operator** grants the purchased traffic on its own sequencer. MVP is no-discount; later come
+per-synchronizer pricing, transaction-class discounts, staking, and operator rewards.
+
+Details: [`docs/architecture.md`](docs/architecture.md) (the map) · [`docs/design/`](docs/design)
+(implementation design) · [`docs/cip/`](docs/cip) (CIP writeups) ·
+[`docs/planning/`](docs/planning) (the work breakdown).
+
+## Control-center layout
+
+The repo follows a deliberate control-center pattern — a small, uniform structure so any agent or
+teammate can orient fast:
+
+| # | Element | Here |
+|---|---|---|
+| 0 | **Sibling-project map** | [`AGENTS.md`](AGENTS.md) — what the sibling repos are + how to navigate |
+| 1 | **Architecture / docs** | [`docs/`](docs) — `architecture.md`, `design/`, `cip/`, `planning/`, `localnet.md` |
+| 2 | **Deployment (executable specs)** | [`deploy/`](deploy) — NixOS descriptions *(skeleton; [RFC-001](history/rfcs/RFC-001-nixos-deployment.md))* |
+| 3 | **Agent-navigation APIs/services** | [`tools/`](tools) — `navigator.sh` *(skeleton; [RFC-002](history/rfcs/RFC-002-agent-navigation-apis.md))* |
+| 4 | **Centralized telemetry** | [`telemetry/`](telemetry) — analytics/logging/telemetry *(skeleton; [RFC-003](history/rfcs/RFC-003-telemetry.md))* |
+| 5 | **Historical records** | [`history/`](history) — `rfcs/`, `meetings/`, `experiments/`, `incidents/`, `CHANGELOG.md` |
+
+Plus the working pieces: **`splice/`** (submodule → the code), **`scripts/`** (LocalNet harness),
+**`sync-pricing/`** (parked off-ledger pricing analysis).
+
+## Repos in play
 
 | Repo | Role |
 |---|---|
-| **ChainSafe/canton-extending-mainnet** (this, private) | Tooling + analysis + docs + planning. LocalNet harness, shadow pricing engine, CIP design docs (`docs/cip/`), work plan. Issue epics **T0** (harness/dev-env) + **T1** (analysis/DA coordination). |
-| **ChainSafe/splice** (fork of `canton-network/splice`) | The real code — the Daml packages (`splice-amulet`, `splice-dso-governance`) and Scala apps. The PoC lives here as PRs #1/#2. Issue epics **E0–E10** (compile/test + the feature workstreams). |
-| **ChainSafe/canton-cip-docs** | **Archived** — its CIP design docs were merged into this repo under `docs/cip/` (history preserved). |
+| **canton-extending-mainnet** (this, private) | The control center: docs, plans, harness, analysis, coordination. Issue epics **T0** (harness/dev-env) + **T1** (analysis/DA). |
+| **ChainSafe/splice** (fork; the `splice/` submodule) | **The code** — one monorepo: Daml (`daml/`, `token-standard/`), Scala (`apps/`), TS frontends, vendored Canton (`canton/`), Helm (`cluster/`). PoC on `daml-poc-buy-traffic` (PRs #1/#2). Issue epics **E0–E10**. |
+| **ChainSafe/canton-cip-docs** | Archived — CIP design docs merged here under `docs/cip/`. |
 
-## The feature, in one paragraph
+See [`AGENTS.md`](AGENTS.md) for the full sibling list (x402 facilitator, MCP server, burn
+snapshotter, platform docs, …).
 
-Canton meters usage as *traffic* and today only the Global Synchronizer sells it: a validator
-burns Canton Coin (CC) via `AmuletRules_BuyMemberTraffic`, which mints a `MemberTraffic` record,
-and a Super-Validator trigger grants the purchased traffic on the sequencer. The CIP generalizes
-this to **dedicated** (non-global) synchronizers: burn CC on the global sync **keyed by the
-dedicated synchronizer's id**, and that synchronizer's **operator** grants the purchased traffic
-on its own sequencer. The MVP is no-discount; later workstreams add per-synchronizer pricing,
-transaction-class discounts, staking/commitment, and an operator reward model. See
-`docs/design/extension-traffic-manager.md` (implementation design), `docs/cip/` (the CIP
-writeups), and `docs/planning/extending-mainnet-work-plan.md` (the work breakdown).
+## Quick start
 
-## What's in this repo
-
-```
-AGENTS.md           Agent-facing index: sibling projects + navigation (start here)
-splice/             Submodule -> ChainSafe/splice fork = THE CODE
-                    (Daml daml/ + token-standard/, Scala apps/, TS frontends, vendored Canton canton/, Helm cluster/)
-docs/               Architecture + design + CIP + plan
-  architecture.md     how the pieces fit (map)
-  design/             our implementation design for the dedicated-sync feature
-  cip/internal/       CIP writeups: technical plan, kickoff, exec summary, diagrams, presenter notes
-                      (merged from the archived canton-cip-docs)
-  planning/           epics/issues across both repos
-  localnet.md         LocalNet + e2e guide
-history/            Historical records
-  rfcs/               RFC-001 nixos-deploy, RFC-002 agent-apis, RFC-003 telemetry
-  meetings/           decision notes
-  experiments/  incidents/  CHANGELOG.md
-scripts/            One-command LocalNet harness (up/down/e2e, multi-sync)
-tools/              Agent-navigation helpers (navigator.sh; RFC-002)
-deploy/             NixOS deployment specs (skeleton; RFC-001)
-telemetry/          Observability (skeleton; RFC-003)
-sync-pricing/       Parked off-ledger pricing engine + conversion harness (pure Daml)
-```
-
-## Getting started
-
-**LocalNet** (needs Docker; raise its RAM to ~10 GB for multi-sync). Drives the `splice/` submodule
-by default (override with `SPLICE_DIR=...`):
-```
-scripts/localnet-up.sh      # then: scripts/localnet-e2e.sh   ;   tear down: scripts/localnet-down.sh
-```
-Full guide: `docs/localnet.md`.
-
-**Shadow pricing engine** (Daml SDK 3.4.8, no Splice dependency):
-```
-cd sync-pricing && daml test    # 14 scripts, all green
-```
+- **Orient:** read [`AGENTS.md`](AGENTS.md), or run `tools/navigator.sh`.
+- **Run LocalNet** (Docker; ~10 GB RAM for multi-sync) — drives the `splice/` submodule:
+  ```
+  scripts/localnet-up.sh      # then scripts/localnet-e2e.sh   ;   tear down: scripts/localnet-down.sh
+  ```
+  Full guide: [`docs/localnet.md`](docs/localnet.md).
+- **Work on the code:** `cd splice`, work on a branch, push to the `ChainSafe/splice` fork, then
+  `git add splice` here to bump the pointer. **Push the submodule before the superproject.**
+- **Pricing analysis** (parked; pure Daml, SDK 3.4.8): `cd sync-pricing && daml test`.
 
 ## Status
 
-- **Done:** shadow pricing engine + conversion harness (green, grounded against live LocalNet
-  values); one-command multi-sync LocalNet harness (verified end-to-end).
-- **Drafted (unverified):** the Daml PoC — `RegisteredSynchronizer` + governance registration and
-  `AmuletRules_BuyDedicatedSyncTraffic` + `DedicatedSyncTraffic` — as fork PRs #1/#2. Not yet
-  compiled (needs the Nix dev shell).
-- **Next:** Nix dev env → compile + test the PoC (fork) → LocalNet register→buy→grant e2e → the
-  Scala reconcile/operator automation.
+- **Done:** the multi-sync LocalNet harness (verified end-to-end); the shadow pricing engine +
+  conversion harness (green, grounded against live LocalNet values).
+- **Drafted (unverified):** the Daml PoC in the fork — governance registration
+  (`RegisteredSynchronizer`) + CC-funded buy (`AmuletRules_BuyDedicatedSyncTraffic` /
+  `DedicatedSyncTraffic`). Needs the Nix dev shell to compile.
+- **Next:** Nix dev env → compile + test the PoC → LocalNet register→buy→grant e2e → the Scala
+  reconcile/operator automation. Tracked in [`docs/planning/`](docs/planning).
 
-## Notes on the pricing engine (parked)
-
-`sync-pricing/` validated the CIP math off-ledger **before** touching on-ledger schema. It is a
-reference artifact, not on the implementation path — the MVP reuses Splice's existing
-`computeSynchronizerFees` + `splitAndBurn` unchanged (no discounts). One finding is worth
-carrying forward regardless: the CIP's Section 6.2 duration factor `Di * D^log2(d)` does **not**
-reproduce its own Section 5 table; `Di * (1 - D)^log2(d)` (a 25% incremental discount per
-doubling) does. This is encoded as a passing test (`Test/Section5Table.daml`) and tracked to raise
-with Digital Asset.
-
-## Grounding
-
-Claims are verified against real `canton-network/splice` and `digital-asset/canton` source:
-`computeSynchronizerFees` (round `trafficPrice` takes precedence over config `extraTrafficPrice`),
-`splitAndBurn` mints a `ValidatorRewardCoupon`, `SynchronizerFeesConfig` in
-`DecentralizedSynchronizer.daml`, and Canton's `EventCostCalculator` for the byte-cost formula.
-Docs style: direct language, no em/long dashes.
+Conventions: never reference Claude/Anthropic in commits or PRs; direct-language docs (no em/long
+dashes). The pricing engine is a parked reference (the MVP reuses Splice's `computeSynchronizerFees`
++ `splitAndBurn` unchanged); it also surfaced a CIP Section 6.2 formula bug tracked to raise with DA
+(see [`docs/`](docs) / [`sync-pricing/`](sync-pricing)).
