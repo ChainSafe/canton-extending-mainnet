@@ -10,7 +10,7 @@ per-synchronizer, CC-funded, discount-curve, optionally-staked pricing across **
 
 This document enumerates the work as epics and issues so the team can create and track them.
 It is grounded in the design doc (`docs/design/extension-traffic-manager.md`), the meeting
-decisions (`docs/meetings/2026-07-08-*`), and the actual Splice fork integration surface (real
+decisions (`history/meetings/2026-07-08-*`), and the actual Splice fork integration surface (real
 file paths + consumer counts below).
 
 **Where we are today (built):** LocalNet brought up and the real burn-mint loop observed, and

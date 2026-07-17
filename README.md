@@ -3,9 +3,11 @@
 ChainSafe's working repo for implementing the Canton CIP **"Extending Mainnet: Tokenomics
 Alignment Across the Entire Canton Network"** (Shaul Kfir, Digital Asset).
 
-This repo is **not** the on-ledger code. It holds the **tooling, harnesses, analysis, and
-planning** we build to *do* the implementation, plus the coordination with Digital Asset. The
-actual Daml/Scala changes are contributed to the Splice fork. Two repos are in play (a third is now archived):
+This is the **control center** for the initiative: it holds the **tooling, harnesses, analysis,
+planning, and docs** we build to *do* the implementation, plus coordination with Digital Asset —
+but almost no product code. The actual code lives in the **`splice/` submodule** (the
+`ChainSafe/splice` fork). **Agents: start with [`AGENTS.md`](AGENTS.md)** — the sibling-project map
+and navigation guide. Two repos are in play (a third is archived):
 
 | Repo | Role |
 |---|---|
@@ -28,29 +30,31 @@ writeups), and `docs/planning/extending-mainnet-work-plan.md` (the work breakdow
 ## What's in this repo
 
 ```
-scripts/            One-command LocalNet harness (multi-sync, dedicated app-synchronizer)
-  localnet-up.sh      bring up + wait healthy + discover synchronizer ids / DSO party
-  localnet-e2e.sh     self-skipping smoke check (both syncs connected + CC tap)
-  localnet-down.sh    tear down ( --wipe also drops volumes )
-  localnet-common.sh  shared config + helpers
-sync-pricing/       Shadow pricing engine + conversion harness (PARKED reference; pure Daml)
-  daml/SyncPricing.daml          the CIP Section 6 discount curve
-  daml/TrafficConversion.daml    cents/tx <-> bytes <-> CC conversion (ports Canton + Splice math)
-  daml/Test/                     acceptance tests (reproduce the CIP Section 5 table + live buy)
-docs/
-  cip/internal/                         CIP design docs (technical plan, kickoff, exec summary,
-                                        diagrams, presenter notes) - merged from the archived canton-cip-docs
-  design/extension-traffic-manager.md   our implementation design for the dedicated-sync feature
-  planning/extending-mainnet-work-plan.md  epics/issues across both repos
-  localnet.md                           LocalNet + e2e guide
-  meetings/                             decision notes
-splice/             Splice pinned as a git submodule (reference / LocalNet source)
+AGENTS.md           Agent-facing index: sibling projects + navigation (start here)
+splice/             Submodule -> ChainSafe/splice fork = THE CODE
+                    (Daml daml/ + token-standard/, Scala apps/, TS frontends, vendored Canton canton/, Helm cluster/)
+docs/               Architecture + design + CIP + plan
+  architecture.md     how the pieces fit (map)
+  design/             our implementation design for the dedicated-sync feature
+  cip/internal/       CIP writeups: technical plan, kickoff, exec summary, diagrams, presenter notes
+                      (merged from the archived canton-cip-docs)
+  planning/           epics/issues across both repos
+  localnet.md         LocalNet + e2e guide
+history/            Historical records
+  rfcs/               RFC-001 nixos-deploy, RFC-002 agent-apis, RFC-003 telemetry
+  meetings/           decision notes
+  experiments/  incidents/  CHANGELOG.md
+scripts/            One-command LocalNet harness (up/down/e2e, multi-sync)
+tools/              Agent-navigation helpers (navigator.sh; RFC-002)
+deploy/             NixOS deployment specs (skeleton; RFC-001)
+telemetry/          Observability (skeleton; RFC-003)
+sync-pricing/       Parked off-ledger pricing engine + conversion harness (pure Daml)
 ```
 
 ## Getting started
 
-**LocalNet** (needs Docker; raise its RAM to ~10 GB for multi-sync). Drives a Splice tree at
-`SPLICE_DIR` (default `/Users/s3b/Dev/splice`):
+**LocalNet** (needs Docker; raise its RAM to ~10 GB for multi-sync). Drives the `splice/` submodule
+by default (override with `SPLICE_DIR=...`):
 ```
 scripts/localnet-up.sh      # then: scripts/localnet-e2e.sh   ;   tear down: scripts/localnet-down.sh
 ```
