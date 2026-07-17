@@ -10,8 +10,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # --- config (all overridable via env) ---
-# Splice tree carrying the 0.6.13 compose + the PoC branches.
-SPLICE_DIR="${SPLICE_DIR:-/Users/s3b/Dev/splice}"
+# Splice tree carrying the compose + the PoC branches. Defaults to the `splice` submodule in this
+# repo (the single working tree); override with SPLICE_DIR=... to point at another checkout.
+SPLICE_DIR="${SPLICE_DIR:-$PROJECT_DIR/splice}"
 LOCALNET_DIR="${LOCALNET_DIR:-$SPLICE_DIR/cluster/compose/localnet}"
 
 # Phase 1: stock published images. Phase 2 overrides IMAGE_TAG (and sets IMAGE_REPO="") to point
