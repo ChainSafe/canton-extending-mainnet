@@ -1,49 +1,87 @@
 # canton-extending-mainnet
 
-ChainSafe implementation work for the Canton CIP **"Extending Mainnet: Tokenomics Alignment Across the Entire Canton Network"** (Shaul Kfir, Digital Asset). Design docs live in `ChainSafe/canton-cip-docs`; this repo is the code.
+ChainSafe's working repo for implementing the Canton CIP **"Extending Mainnet: Tokenomics
+Alignment Across the Entire Canton Network"** (Shaul Kfir, Digital Asset).
+
+This repo is **not** the on-ledger code. It holds the **tooling, harnesses, analysis, and
+planning** we build to *do* the implementation, plus the coordination with Digital Asset. The
+actual Daml/Scala changes are contributed to the Splice fork. Concretely, three repos are in play:
+
+| Repo | Role |
+|---|---|
+| **ChainSafe/canton-extending-mainnet** (this) | Tooling + analysis + docs + planning. LocalNet harness, shadow pricing engine, work plan. Issue epics **T0** (harness/dev-env) + **T1** (analysis/DA coordination). |
+| **ChainSafe/splice** (fork of `canton-network/splice`) | The real code — the Daml packages (`splice-amulet`, `splice-dso-governance`) and Scala apps. The PoC lives here as PRs #1/#2. Issue epics **E0–E10** (compile/test + the feature workstreams). |
+| **ChainSafe/canton-cip-docs** (private) | The design source of truth (a working mirror of the design doc also lives here under `docs/design/`). |
+
+## The feature, in one paragraph
+
+Canton meters usage as *traffic* and today only the Global Synchronizer sells it: a validator
+burns Canton Coin (CC) via `AmuletRules_BuyMemberTraffic`, which mints a `MemberTraffic` record,
+and a Super-Validator trigger grants the purchased traffic on the sequencer. The CIP generalizes
+this to **dedicated** (non-global) synchronizers: burn CC on the global sync **keyed by the
+dedicated synchronizer's id**, and that synchronizer's **operator** grants the purchased traffic
+on its own sequencer. The MVP is no-discount; later workstreams add per-synchronizer pricing,
+transaction-class discounts, staking/commitment, and an operator reward model. See
+`docs/design/extension-traffic-manager.md` and `docs/planning/extending-mainnet-work-plan.md`.
+
+## What's in this repo
+
+```
+scripts/            One-command LocalNet harness (multi-sync, dedicated app-synchronizer)
+  localnet-up.sh      bring up + wait healthy + discover synchronizer ids / DSO party
+  localnet-e2e.sh     self-skipping smoke check (both syncs connected + CC tap)
+  localnet-down.sh    tear down ( --wipe also drops volumes )
+  localnet-common.sh  shared config + helpers
+sync-pricing/       Shadow pricing engine + conversion harness (PARKED reference; pure Daml)
+  daml/SyncPricing.daml          the CIP Section 6 discount curve
+  daml/TrafficConversion.daml    cents/tx <-> bytes <-> CC conversion (ports Canton + Splice math)
+  daml/Test/                     acceptance tests (reproduce the CIP Section 5 table + live buy)
+docs/
+  design/extension-traffic-manager.md   the design (canonical copy in canton-cip-docs)
+  planning/extending-mainnet-work-plan.md  epics/issues across both repos
+  localnet.md                            LocalNet + e2e guide
+  meetings/                              decision notes
+splice/             Splice pinned as a git submodule (reference / LocalNet source)
+```
+
+## Getting started
+
+**LocalNet** (needs Docker; raise its RAM to ~10 GB for multi-sync). Drives a Splice tree at
+`SPLICE_DIR` (default `/Users/s3b/Dev/splice`):
+```
+scripts/localnet-up.sh      # then: scripts/localnet-e2e.sh   ;   tear down: scripts/localnet-down.sh
+```
+Full guide: `docs/localnet.md`.
+
+**Shadow pricing engine** (Daml SDK 3.4.8, no Splice dependency):
+```
+cd sync-pricing && daml test    # 14 scripts, all green
+```
 
 ## Status
 
-**Track A — shadow-mode pricing engine: done and green.** An off-ledger, pure-Daml implementation of the CIP Section 6 discount curve that reproduces the CIP Section 5 pricing table. No dependency on Splice — it validates the math before any on-ledger wiring.
+- **Done:** shadow pricing engine + conversion harness (green, grounded against live LocalNet
+  values); one-command multi-sync LocalNet harness (verified end-to-end).
+- **Drafted (unverified):** the Daml PoC — `RegisteredSynchronizer` + governance registration and
+  `AmuletRules_BuyDedicatedSyncTraffic` + `DedicatedSyncTraffic` — as fork PRs #1/#2. Not yet
+  compiled (needs the Nix dev shell).
+- **Next:** Nix dev env → compile + test the PoC (fork) → LocalNet register→buy→grant e2e → the
+  Scala reconcile/operator automation.
 
-Not yet started (need a Nix-based Splice dev environment; see below):
-- Vendoring a working Splice (pinned) to build/run against.
-- LocalNet smoke test of the real `AmuletRules_BuyMemberTraffic` -> `splitAndBurn` -> `MemberTraffic` -> `SetTrafficPurchased` flow.
-- The cents/tx to bytes conversion harness (needs LocalNet to measure real sequenced byte costs).
+## Notes on the pricing engine (parked)
 
-## Layout
+`sync-pricing/` validated the CIP math off-ledger **before** touching on-ledger schema. It is a
+reference artifact, not on the implementation path — the MVP reuses Splice's existing
+`computeSynchronizerFees` + `splitAndBurn` unchanged (no discounts). One finding is worth
+carrying forward regardless: the CIP's Section 6.2 duration factor `Di * D^log2(d)` does **not**
+reproduce its own Section 5 table; `Di * (1 - D)^log2(d)` (a 25% incremental discount per
+doubling) does. This is encoded as a passing test (`Test/Section5Table.daml`) and tracked to raise
+with Digital Asset.
 
-```
-sync-pricing/                 Daml package: the shadow-mode pricing engine
-  daml/SyncPricing.daml         the curve: PriceClass, SyncPricingConfig, priceCents
-  daml/Test/Section5Table.daml  acceptance test: reproduces the CIP Section 5 table
-```
+## Grounding
 
-## Build & test
-
-Requires the Daml SDK (developed against 3.4.8).
-
-```
-cd sync-pricing
-daml build      # compiles the pricing library to a DAR
-daml test       # runs the Section 5 table acceptance test (8 scripts, all green)
-```
-
-## What the pricing engine establishes
-
-- **Reproduces the CIP Section 5 table.** `priceCents cfg class tps years` returns the gross cents/tx. Tiered mode reproduces the tabulated points *exactly* (integer decade / doubling exponents, pure Decimal math); smooth mode uses `DA.Math` `exp`/`log` and matches within a 0.05c tolerance.
-- **Fixes the Section 6.2 factor bug.** The CIP writes the duration factor as `Di * D^log2(d)`, which gives 12.5c at a 2-year commitment where the table needs 37.5c. The engine uses `Di * (1 - D)^log2(d)` (a 25% *incremental* discount per doubling), which reproduces the table. `testSection62FactorBug` asserts both the correct value and the buggy one, so the discrepancy is executable, not just prose.
-- **Three tiers + extension-only throughput discount.** Base prices regular 100c / app-internal 30c / org-internal 10c; the throughput discount is forced to identity when `isExtensionSynchronizer = False` (the Global Synchronizer), matching CIP Section 6.1 and worked Example 4.
-- **Smooth vs tiered.** Both are implemented behind `DiscountMode`. Recommendation for the eventual on-ledger version: **tiered**, to avoid Daml `Numeric` (10 dp) rounding drift from `exp`/`log`.
-
-## Next steps (Track A remainder + Track B)
-
-1. **Splice dev env (needs Nix).** Install Nix, add Splice as a pinned submodule (a released 3.5.x, not `main`), build the `splice-amulet` DAR, and bring up LocalNet. Splice's stack: Daml (on-ledger) + Scala/JVM (apps + automation) + TypeScript (frontends) + Nix/LocalNet (dev env).
-2. **LocalNet smoke test.** Execute `AmuletRules_BuyMemberTraffic` and observe burn + `MemberTraffic` + `SetTrafficPurchased`.
-3. **cents/tx to bytes harness.** Sequence a simple transfer vs a multi-party/DvP-style tx, read the actual byte cost (`byteSize * (1 + recipients * readVsWriteScalingFactor/10000) + baseEventCost`), derive per-class `avgBytesPerTx`, and write up the conversion (or "per-tx billing unit") note for the DA session.
-4. **Later (post-DA):** wire per-synchronizer pricing into `AmuletConfig` (a schema change: `decentralizedSynchronizer` is a single config today, not a map), the commitment-stake + coupon-free shortfall burn, and the report-to-mint path. These are gated on the DA questions (GATE-1..5).
-
-## Provenance / grounding
-
-The curve and the upstream references were verified against the current `canton-network/splice` and `digital-asset/canton` source:
-`computeSynchronizerFees` (AmuletRules.daml:1727; round `trafficPrice` takes precedence over config `extraTrafficPrice`), `splitAndBurn` mints a `ValidatorRewardCoupon` (AmuletRules.daml:2246), `SynchronizerFeesConfig` (DecentralizedSynchronizer.daml:36), and Canton's `EventCostCalculator` for the byte formula.
+Claims are verified against real `canton-network/splice` and `digital-asset/canton` source:
+`computeSynchronizerFees` (round `trafficPrice` takes precedence over config `extraTrafficPrice`),
+`splitAndBurn` mints a `ValidatorRewardCoupon`, `SynchronizerFeesConfig` in
+`DecentralizedSynchronizer.daml`, and Canton's `EventCostCalculator` for the byte-cost formula.
+Docs style: direct language, no em/long dashes.
