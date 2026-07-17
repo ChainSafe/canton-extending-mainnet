@@ -5,13 +5,13 @@ Alignment Across the Entire Canton Network"** (Shaul Kfir, Digital Asset).
 
 This repo is **not** the on-ledger code. It holds the **tooling, harnesses, analysis, and
 planning** we build to *do* the implementation, plus the coordination with Digital Asset. The
-actual Daml/Scala changes are contributed to the Splice fork. Concretely, three repos are in play:
+actual Daml/Scala changes are contributed to the Splice fork. Two repos are in play (a third is now archived):
 
 | Repo | Role |
 |---|---|
-| **ChainSafe/canton-extending-mainnet** (this) | Tooling + analysis + docs + planning. LocalNet harness, shadow pricing engine, work plan. Issue epics **T0** (harness/dev-env) + **T1** (analysis/DA coordination). |
+| **ChainSafe/canton-extending-mainnet** (this, private) | Tooling + analysis + docs + planning. LocalNet harness, shadow pricing engine, CIP design docs (`docs/cip/`), work plan. Issue epics **T0** (harness/dev-env) + **T1** (analysis/DA coordination). |
 | **ChainSafe/splice** (fork of `canton-network/splice`) | The real code — the Daml packages (`splice-amulet`, `splice-dso-governance`) and Scala apps. The PoC lives here as PRs #1/#2. Issue epics **E0–E10** (compile/test + the feature workstreams). |
-| **ChainSafe/canton-cip-docs** (private) | The design source of truth (a working mirror of the design doc also lives here under `docs/design/`). |
+| **ChainSafe/canton-cip-docs** | **Archived** — its CIP design docs were merged into this repo under `docs/cip/` (history preserved). |
 
 ## The feature, in one paragraph
 
@@ -22,7 +22,8 @@ this to **dedicated** (non-global) synchronizers: burn CC on the global sync **k
 dedicated synchronizer's id**, and that synchronizer's **operator** grants the purchased traffic
 on its own sequencer. The MVP is no-discount; later workstreams add per-synchronizer pricing,
 transaction-class discounts, staking/commitment, and an operator reward model. See
-`docs/design/extension-traffic-manager.md` and `docs/planning/extending-mainnet-work-plan.md`.
+`docs/design/extension-traffic-manager.md` (implementation design), `docs/cip/` (the CIP
+writeups), and `docs/planning/extending-mainnet-work-plan.md` (the work breakdown).
 
 ## What's in this repo
 
@@ -37,10 +38,12 @@ sync-pricing/       Shadow pricing engine + conversion harness (PARKED reference
   daml/TrafficConversion.daml    cents/tx <-> bytes <-> CC conversion (ports Canton + Splice math)
   daml/Test/                     acceptance tests (reproduce the CIP Section 5 table + live buy)
 docs/
-  design/extension-traffic-manager.md   the design (canonical copy in canton-cip-docs)
+  cip/internal/                         CIP design docs (technical plan, kickoff, exec summary,
+                                        diagrams, presenter notes) - merged from the archived canton-cip-docs
+  design/extension-traffic-manager.md   our implementation design for the dedicated-sync feature
   planning/extending-mainnet-work-plan.md  epics/issues across both repos
-  localnet.md                            LocalNet + e2e guide
-  meetings/                              decision notes
+  localnet.md                           LocalNet + e2e guide
+  meetings/                             decision notes
 splice/             Splice pinned as a git submodule (reference / LocalNet source)
 ```
 
