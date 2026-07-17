@@ -52,6 +52,7 @@ snapshotter, platform docs, …).
 ## Quick start
 
 - **Orient:** read [`AGENTS.md`](AGENTS.md), or run `tools/navigator.sh`.
+- **Set up + build/test:** [`docs/development.md`](docs/development.md) — Nix/direnv env + the `sbt damlBuild`/`damlTest` commands (start here to run the tests).
 - **Run LocalNet** (Docker; ~10 GB RAM for multi-sync) — drives the `splice/` submodule:
   ```
   scripts/localnet-up.sh      # then scripts/localnet-e2e.sh   ;   tear down: scripts/localnet-down.sh

@@ -39,4 +39,4 @@ Drives a running multi-sync network via CLI/console/API. This is the analogue of
 
 - Fork changes are tested in the fork (Tiers 1/2) — that is what Splice CI gates.
 - Do **not** couple to `canton-middleware`; only adopt generic patterns into Tier 3.
-- Run Daml tests inside the Nix dev shell: `direnv exec . sbt '<proj>/Test/damlTest'` (env setup: `AGENTS.md` / `docs/localnet.md`).
+- Run Daml tests inside the Nix dev shell: `direnv exec . sbt '<proj>/Test/damlTest'` (environment setup: `docs/development.md`).
