@@ -8,8 +8,9 @@ Guidance for Claude Code when working in this repository.
 
 **This is a standalone project. It is NOT related to `canton-middleware`** (a separate ChainSafe repo). Do not reference, import from, or write to canton-middleware.
 
-- **Design docs / analysis (source of truth):** the GitHub repo `ChainSafe/canton-cip-docs` (technical plan, kickoff, diagrams, external review memo). This repo is the *code*.
-- **ChainSafe's role:** as a Super Validator and prospective extension-synchronizer operator, co-designing and piloting the CIP with Digital Asset.
+- **Repo roles:** this repo (`ChainSafe/canton-extending-mainnet`, private) is the **tooling / analysis / docs / planning** hub. The actual on-ledger + app **code** changes live in the Splice fork `ChainSafe/splice` (PoC PRs #1/#2; issue epics E0-E10). See `README.md`.
+- **Design docs / analysis:** now in this repo under `docs/cip/` (technical plan, kickoff, diagrams, exec summary, presenter notes) - merged in from the former `ChainSafe/canton-cip-docs`, which is **archived**. Working design + planning live under `docs/design/` and `docs/planning/`.
+- **ChainSafe's role:** as a Super Validator and prospective dedicated-synchronizer operator, co-designing and piloting the CIP with Digital Asset.
 
 ## Stack
 
