@@ -24,7 +24,9 @@ Match Splice's stack:
 ```
 sync-pricing/                    Daml package: the shadow-mode pricing engine
   daml/SyncPricing.daml            the CIP Section 6 discount curve
+  daml/TrafficConversion.daml      cents/tx <-> bytes <-> CC conversion (EventCostCalculator + computeSynchronizerFees port)
   daml/Test/Section5Table.daml     acceptance test reproducing the CIP Section 5 table
+  daml/Test/TrafficConversionTest.daml  ground-truth test (Canton vectors + live LocalNet buy reproduction)
 splice/                          Splice pinned submodule (canton-network/splice @ 0.6.11, shallow):
                                    source (AmuletRules, DecentralizedSynchronizer, EventCostCalculator)
                                    + Docker LocalNet at splice/cluster/compose/localnet
@@ -35,15 +37,16 @@ splice/                          Splice pinned submodule (canton-network/splice 
 ```
 cd sync-pricing
 daml build                       # compile the pricing library to a DAR
-daml test                        # run the Section 5 acceptance test (currently 8 scripts, all green)
+daml test                        # run the acceptance tests (currently 14 scripts, all green)
 ```
 
 ## Status & next steps
 
 - **Done:** shadow-mode pricing engine (off-ledger, pure Daml, no Splice dependency). Reproduces the CIP Section 5 table; encodes the Section 6.2 `(1 - D)` factor fix as an executable test; three tiers (100/30/10); extension-only throughput discount; smooth + tiered modes (recommend **tiered** on-ledger to avoid Numeric rounding drift).
 - **Done:** Splice pinned as a shallow submodule at `splice/` (canton-network/splice @ **0.6.11**, commit `fd93f86`). LocalNet lives at `splice/cluster/compose/localnet` and pulls published images from `ghcr.io/digital-asset/...` by `IMAGE_TAG=0.6.11` (no build step).
-- **Next:** bring up Splice **Docker LocalNet** (`splice/cluster/compose/localnet`; profiles `sv`/`app-user`/`console`; requires `IMAGE_TAG`, `LOCALNET_DIR`, `PARTY_HINT`); the validator auto-tops-up traffic every 1m (`TARGET_TRAFFIC_THROUGHPUT=20000`, `MIN_TRAFFIC_TOPUP_INTERVAL=1m`), which exercises the real `AmuletRules_BuyMemberTraffic` -> `splitAndBurn` -> `MemberTraffic` -> `SetTrafficPurchased` flow with no manual trigger. Then build the cents/tx-to-bytes conversion harness (`byteSize * (1 + recipients * readVsWriteScalingFactor/10000) + baseEventCost`).
-- **Later (gated on Digital Asset answers):** wire per-synchronizer pricing into `AmuletConfig` (a schema change — it is a single config today, not a map), the commitment-stake + coupon-free shortfall burn, and the report-to-mint path.
+- **Done:** brought up Docker LocalNet (full `sv`+`app-provider`+`app-user` stack, verified 2026-07-08) and observed the real `AmuletRules_BuyMemberTraffic` -> `splitAndBurn` (mints `ValidatorRewardCoupon`) -> `SetTrafficPurchased` flow fire with no manual trigger. Runs in ~4.8 GiB of the 7.7 GiB Docker allocation. See [[splice-localnet]] memory for the exact command + observed numbers.
+- **Done:** cents/tx-to-bytes conversion harness (`TrafficConversion.daml`): faithful ports of Canton's `EventCostCalculator` (integer byte cost) and Splice's `computeSynchronizerFees` (bytes -> USD -> CC), plus the inverse (CIP cents/tx -> bytes/CC). Grounded by `TrafficConversionTest.daml`, which pins Canton's own unit-test vectors AND reproduces the live LocalNet buy exactly (1,200,000 bytes -> $20.004 -> 4000.8 CC at extraTrafficPrice=$16.67/MB, scaling=4, amuletPrice=$0.005/CC, baseEventCost=0, all read from the running Scan API).
+- **Next / Later (gated on Digital Asset answers):** wire per-synchronizer pricing into `AmuletConfig` (a schema change — it is a single config today, not a map), the commitment-stake + coupon-free shortfall burn, and the report-to-mint path.
 
 ## Conventions
 
