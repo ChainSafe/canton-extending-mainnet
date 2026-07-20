@@ -36,6 +36,8 @@ Claude-specific notes and defers to this file.
 - **What to build & who tracks it:** `docs/planning/extending-mainnet-work-plan.md`. Issues are split — code in `ChainSafe/splice` (epics E0–E10), tooling/analysis here (epics T0/T1).
 - **Run LocalNet:** `scripts/localnet-up.sh` (uses the `splice/` submodule) → `scripts/localnet-e2e.sh`.
 - **Work on the code:** `cd splice`, work on a branch, push to the fork, then `git add splice` here to bump the pointer. **Push the submodule before the superproject.**
+- **Set up your environment:** see `docs/development.md` — clone with the submodule, the Nix/direnv dev shell, and the build/test commands.
+- **Test a change:** see `docs/testing.md` — 3 tiers (Daml Script + Scala integration in the fork; black-box LocalNet e2e here).
 - **Orient quickly:** `tools/navigator.sh`.
 
 ## Conventions
