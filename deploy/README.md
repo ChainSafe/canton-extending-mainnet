@@ -1,9 +1,16 @@
-# deploy/ — NixOS deployment (skeleton)
+# deploy/ — deployment overlays
 
-Executable deployment descriptions for the initiative (LocalNet, the dedicated-sync operator node,
-later SV/validator). Skeleton only — the full-build plan is
-**`../history/rfcs/RFC-001-nixos-deployment.md`**.
+Deployment for the initiative is **DRY/KISS: consume what Splice ships; add only a thin ChainSafe
+overlay, in Splice's own idiom.** No NixOS. See **`../history/rfcs/RFC-001-nixos-deployment.md`**
+(the NixOS proposal was rejected; the RFC now records the model below).
 
-Today LocalNet is driven by `../scripts/localnet-*.sh` (docker compose over the `splice/`
-submodule). RFC-001 migrates that to Nix so the deployment is a single executable spec that can't
-drift from reality.
+- **LocalNet / dev** — docker-compose from the `splice/` submodule, driven by `../scripts/localnet-*.sh`.
+  Already working; nothing lives here for it.
+- **SV / validator (clusters)** — Splice Helm charts (`splice/cluster/helm`) consumed as-is, plus a
+  ChainSafe `values` overlay. Only when we run full stacks.
+- **dedicated-sync-operator** — the one net-new artifact we own. A compose overlay for LocalNet, a
+  Helm chart (reusing Splice's participant/sequencer/mediator building blocks) for real deployment.
+  Tracks work-plan **E3-3**.
+
+This directory holds those overlays as they get built. It is empty until the operator-node work
+(E3) starts.

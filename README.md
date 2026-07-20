@@ -30,7 +30,7 @@ teammate can orient fast:
 |---|---|---|
 | 0 | **Sibling-project map** | [`AGENTS.md`](AGENTS.md) — what the sibling repos are + how to navigate |
 | 1 | **Architecture / docs** | [`docs/`](docs) — `architecture.md`, `design/`, `cip/`, `planning/`, `localnet.md` |
-| 2 | **Deployment (executable specs)** | [`deploy/`](deploy) — NixOS descriptions *(skeleton; [RFC-001](history/rfcs/RFC-001-nixos-deployment.md))* |
+| 2 | **Deployment** | [`deploy/`](deploy) — consume Splice compose/Helm + operator-node overlay *([RFC-001](history/rfcs/RFC-001-nixos-deployment.md))* |
 | 3 | **Agent-navigation APIs/services** | [`tools/`](tools) — `navigator.sh` *(skeleton; [RFC-002](history/rfcs/RFC-002-agent-navigation-apis.md))* |
 | 4 | **Centralized telemetry** | [`telemetry/`](telemetry) — analytics/logging/telemetry *(skeleton; [RFC-003](history/rfcs/RFC-003-telemetry.md))* |
 | 5 | **Historical records** | [`history/`](history) — `rfcs/`, `meetings/`, `experiments/`, `incidents/`, `CHANGELOG.md` |

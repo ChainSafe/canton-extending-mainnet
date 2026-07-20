@@ -19,7 +19,7 @@ real signal.
 ## Design sketch
 
 - `telemetry/spec.md` (schema), `telemetry/collector/` (OTel config), `telemetry/dashboards/`.
-- Deployed as a NixOS module (RFC-001). Agent runs (LocalNet e2e, agentic loops) emit traces so
+- Deployed alongside the stack via compose/Helm (RFC-001). Agent runs (LocalNet e2e, agentic loops) emit traces so
   experiments in `history/experiments/` have hard data.
 
 ## Open questions
