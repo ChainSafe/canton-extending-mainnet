@@ -2,7 +2,7 @@
 
 This repo is the **control center** for ChainSafe's work on the Canton CIP "Extending Mainnet"
 (dedicated-synchronizer traffic). It holds little product code; it orchestrates, documents, and
-navigates the work. The actual code lives in the `splice/` submodule (the `ChainSafe/splice` fork).
+navigates the work. The actual code lives in the `splice/` submodule (the `canton-network/splice-multi-sync` fork).
 
 Agents (Claude Code, Codex, etc.) start here — this is the agent-agnostic index. `CLAUDE.md` adds
 Claude-specific notes and defers to this file.
@@ -21,7 +21,7 @@ engineering practice; this repo wins for project-specific facts (layout, sibling
 
 | Project | Where | Role |
 |---|---|---|
-| splice (fork) | `splice/` submodule → github.com/ChainSafe/splice | **THE CODE.** Monorepo: Daml (`daml/`, `token-standard/`), Scala (`apps/`), TS frontends, vendored Canton (`canton/`), Helm (`cluster/`). All CIP feature changes land here (PoC on `daml-poc-buy-traffic`). |
+| splice (fork) | `splice/` submodule → github.com/canton-network/splice-multi-sync | **THE CODE.** Monorepo: Daml (`daml/`, `token-standard/`), Scala (`apps/`), TS frontends, vendored Canton (`canton/`), Helm (`cluster/`). All CIP feature changes land here (PoC on `multi-sync-poc-buy-traffic`). |
 | canton-x402-facilitator / -sdk | github.com/ChainSafe/canton-x402-* | x402 payment facilitator + SDK; source of our LocalNet harness pattern. |
 | canton-mcp-server | github.com/ChainSafe/canton-mcp-server | MCP server for Canton dev — integration point for agent-navigation tooling (RFC-002). |
 | canton-burn-snapshotter | github.com/ChainSafe/canton-burn-snapshotter | Tracks Canton burn for traffic decisions — adjacent to our traffic feature. |
@@ -43,7 +43,7 @@ engineering practice; this repo wins for project-specific facts (layout, sibling
 ## Navigation / common tasks
 
 - **Understand the feature:** `docs/design/extension-traffic-manager.md` + `docs/cip/`.
-- **What to build & who tracks it:** `docs/planning/extending-mainnet-work-plan.md`. Issues are split — code in `ChainSafe/splice` (epics E0–E10), tooling/analysis here (epics T0/T1).
+- **What to build & who tracks it:** `docs/planning/extending-mainnet-work-plan.md`. Issues are split — code in `canton-network/splice-multi-sync` (epics E0–E10), tooling/analysis here (epics T0/T1).
 - **Run LocalNet:** `scripts/localnet-up.sh` (uses the `splice/` submodule) → `scripts/localnet-e2e.sh`.
 - **Work on the code:** `cd splice`, work on a branch, push to the fork, then `git add splice` here to bump the pointer. **Push the submodule before the superproject.**
 - **Set up your environment:** see `docs/development.md` — clone with the submodule, the Nix/direnv dev shell, and the build/test commands.

@@ -15,7 +15,7 @@ file paths + consumer counts below).
 
 **Where we are today (built):** LocalNet brought up and the real burn-mint loop observed, and
 an **unverified Daml PoC** of the MVP on-ledger path drafted as two stacked PRs on
-`ChainSafe/splice` (PR #1 registration, PR #2 CC-funded buy). Earlier, the CIP pricing math
+`canton-network/splice-multi-sync` (PR #1 registration, PR #2 CC-funded buy). Earlier, the CIP pricing math
 was validated off-ledger (`sync-pricing/`) — that is **design-validation analysis, not part
 of the implementation** (see "Parked analysis" below). No Scala/automation, no per-sync
 pricing, and no compiled/tested on-ledger code exist yet.
@@ -103,7 +103,7 @@ Compile, test, and demonstrate the drafted on-ledger PoC end-to-end before build
 **Key files:** `sbt splice-amulet-daml/damlBuild`, `sbt splice-dso-governance-daml/damlBuild`; `project/DamlPlugin.scala`.
 **Acceptance criteria:**
 - [ ] Both `damlBuild` tasks succeed; Java codegen regenerates.
-- [ ] Any fixes pushed to branches `daml-poc-registration` / `daml-poc-buy-traffic`.
+- [ ] Any fixes pushed to branches `multi-sync-poc-registration` / `multi-sync-poc-buy-traffic`.
 **Dependencies:** E0-1.
 
 ### [E0-3] Run the Daml Script test suites
