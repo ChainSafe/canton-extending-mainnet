@@ -63,6 +63,29 @@ These run in the `static_tests` job **before** any tests, so they gate everythin
   pinned by digest, npm package namespacing.
 - **New Scala test files** require `sbt updateTestConfigForParallelRuns` and committing the updated
   root `test-*.log` (checked by the "Verify no changes in SBT test files" step).
+- **Checked-in DARs + `daml/dars.lock` (`DarLockChecker`).** Any change to Daml source changes the
+  compiled DAR, so you must regenerate the checked-in artifacts or `static_tests` fails with
+  "update the checked-in DAR" / "daml lockfile is not up-to-date". Run `sbt damlDarsLockFileUpdate`
+  (rebuilds all DARs, refreshes `daml/dars/*.dar` and `daml/dars.lock`) and commit the result; the
+  binary DAR commit is expected. It also refreshes dependents that embed your package. You do NOT
+  need a version bump unless your package's current version already exists in the release line
+  (check `git show origin/release-line-<ver>:daml/dars.lock`); if it does, bump first with
+  `sbt 'damlBumpPackageVersionsMutate origin/main'`. Note: this check runs after the docs check in
+  the same step, so a docs failure masks it (fix docs first, then this appears).
+
+## Smart-contract upgrade (SCU) compatibility
+
+Splice packages are upgradeable, so a separate check compares your package against the released one.
+`damlc build` and the Daml tests pass regardless, so these bite late (the upgrade/compat check, or
+package vetting on a live network). Rules that have already bitten us:
+- **Append new variant constructors LAST.** LF encodes constructor ranks, so inserting a constructor
+  mid-variant (for example into `DsoRules_ActionRequiringConfirmation`) re-ranks the following ones
+  and breaks upgrade-compat with the released package. Add new `SRARC_*` (and any serializable
+  variant constructor) after all existing ones, immediately before `deriving`. Matching is by name,
+  so the `case` arms and the choices can stay wherever they read best.
+- **Additive-only for released types:** new templates, new choices on existing templates, and new
+  record types are fine. Do not reorder or remove existing constructors, and do not change the field
+  order of a released serializable record.
 
 ## The infra flake (not your code)
 
@@ -92,7 +115,11 @@ for pkg in daml/splice-amulet daml/splice-dso-governance; do
 done
 
 # 3. Daml warts (use a Linux-equivalent grep; the raw script under-reports on macOS)
+
+# 4. If you changed any Daml source: refresh checked-in DARs + dars.lock, then commit the result
+direnv exec . sbt 'damlDarsLockFileUpdate'
+git status -s daml/dars.lock daml/dars/
 ```
 
-If 1-3 pass and your commits carry `[ci]` + `Signed-off-by`, the only remaining CI risk is the
-Stale-file-handle flake above.
+If 1-4 pass, your Daml changes are SCU-safe (see the section above), and your commits carry `[ci]` +
+`Signed-off-by`, the only remaining CI risk is the Stale-file-handle flake above.
