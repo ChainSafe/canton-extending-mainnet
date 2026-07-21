@@ -30,7 +30,7 @@ teammate can orient fast:
 |---|---|---|
 | 0 | **Sibling-project map** | [`AGENTS.md`](AGENTS.md) — what the sibling repos are + how to navigate |
 | 1 | **Architecture / docs** | [`docs/`](docs) — `architecture.md`, `design/`, `cip/`, `planning/`, `localnet.md` |
-| 2 | **Deployment** | [`deploy/`](deploy) — consume Splice compose/Helm + operator-node overlay *([RFC-001](history/rfcs/RFC-001-nixos-deployment.md))* |
+| 2 | **Deployment** | [`deploy/`](deploy) — consume Splice compose/Helm + operator-node overlay *([RFC-001](history/rfcs/RFC-001-deployment.md))* |
 | 3 | **Agent-navigation APIs/services** | [`tools/`](tools) — `navigator.sh` *(skeleton; [RFC-002](history/rfcs/RFC-002-agent-navigation-apis.md))* |
 | 4 | **Centralized telemetry** | [`telemetry/`](telemetry) — analytics/logging/telemetry *(skeleton; [RFC-003](history/rfcs/RFC-003-telemetry.md))* |
 | 5 | **Historical records** | [`history/`](history) — `rfcs/`, `meetings/`, `experiments/`, `incidents/`, `CHANGELOG.md` |
@@ -68,9 +68,10 @@ snapshotter, platform docs, …).
   conversion harness (green, grounded against live LocalNet values).
 - **Drafted (unverified):** the Daml PoC in the fork — governance registration
   (`RegisteredSynchronizer`) + CC-funded buy (`AmuletRules_BuyDedicatedSyncTraffic` /
-  `DedicatedSyncTraffic`). Needs the Nix dev shell to compile.
-- **Next:** Nix dev env → compile + test the PoC → LocalNet register→buy→grant e2e → the Scala
-  reconcile/operator automation. Tracked in [`docs/planning/`](docs/planning).
+  `DedicatedSyncTraffic`). Compiles with Splice's upstream Nix build shell (see
+  [`docs/development.md`](docs/development.md)).
+- **Next:** set up the build shell → compile + test the PoC → LocalNet register→buy→grant e2e → the
+  Scala reconcile/operator automation. Tracked in [`docs/planning/`](docs/planning).
 
 Conventions: never reference Claude/Anthropic in commits or PRs; direct-language docs (no em/long
 dashes). The pricing engine is a parked reference (the MVP reuses Splice's `computeSynchronizerFees`
