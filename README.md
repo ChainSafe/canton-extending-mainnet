@@ -52,7 +52,10 @@ snapshotter, platform docs, …).
 
 ## Quick start
 
-- **Orient:** read [`AGENTS.md`](AGENTS.md), or run `tools/navigator.sh`.
+- **Orient (people):** read [`AGENTS.md`](AGENTS.md). **Agents:** run `tools/navigator.sh`, the
+  navigation tooling (a read-only CLI seed today; [RFC-002](history/rfcs/RFC-002-agent-navigation-apis.md)
+  graduates it into MCP tools over `canton-mcp-server`). Agent orientation is a tooling concern, not
+  README prose.
 - **Set up + build/test:** [`docs/development.md`](docs/development.md) — Nix/direnv env + the `sbt damlBuild`/`damlTest` commands (start here to run the tests).
 - **Run LocalNet** (Docker; ~10 GB RAM for multi-sync) — drives the `splice/` submodule:
   ```
@@ -71,8 +74,8 @@ snapshotter, platform docs, …).
   (`AmuletRules_BuyDedicatedSyncTraffic` + `DedicatedSyncTraffic`), including negative tests. Ported
   to `canton-network/splice-multi-sync` as draft PRs #1/#2 to run DA's CI. Plus: the multi-sync
   LocalNet harness (verified) and the shadow pricing engine (green).
-- **Next:** confirm DA's CI is green on the multi-sync PRs → the Scala reconcile/operator automation
-  → a LocalNet register→buy→grant e2e. Tracked in [`docs/planning/`](docs/planning).
+- **Next + roadmap:** [`docs/planning/`](docs/planning). This README is intentionally a thin front
+  door; the sequenced roadmap and per-workstream detail live there, not here.
 
 Conventions: never reference Claude/Anthropic in commits or PRs; direct-language docs (no em/long
 dashes). The pricing engine is a parked reference (the MVP reuses Splice's `computeSynchronizerFees`
