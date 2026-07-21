@@ -13,5 +13,6 @@ Notable structural + coordination changes to the Extending Mainnet control cente
 - Merged the archived `ChainSafe/canton-cip-docs` into `docs/cip/` (history preserved via subtree).
 - Pushed this repo to a new **private** `ChainSafe/canton-extending-mainnet`.
 - Split issue tracking: code in `ChainSafe/splice` (epics E0–E10); tooling/analysis here (T0/T1).
+- Rejected NixOS deployment (RFC-001 revised): no ChainSafe NixOS fleet, so deployment is DRY/KISS — consume Splice's compose/Helm + a thin operator-node overlay. Removed `deploy/flake.nix`.
 - Built + verified the multi-sync LocalNet harness (`scripts/`).
 - Drafted (unverified) the Daml PoC in the fork: governance registration + CC-funded buy.

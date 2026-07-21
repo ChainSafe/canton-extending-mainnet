@@ -1,9 +1,14 @@
 # Development: environment setup + running tests
 
 A followable guide to get from a fresh clone to building and testing the Daml PoC. The code lives in
-the `splice/` submodule (the `ChainSafe/splice` fork); it builds with a Nix dev shell (provides
-`dpm` / `sbt` / JDK / `damlc`) loaded by direnv. Deeper Splice-specific details:
+the `splice/` submodule (the `ChainSafe/splice` fork); it builds with **Splice's upstream Nix dev
+shell** (provides `dpm` / `sbt` / JDK / `damlc`) loaded by direnv. Deeper Splice-specific details:
 `splice/DEVELOPMENT.md`.
+
+> **Nix here is the upstream *build toolchain*, not a deployment choice.** It is Digital Asset's
+> pinned toolchain for compiling the fork (dpm-sdk, vendored Canton, JDK/sbt) — we consume it as-is.
+> It is unrelated to how we *deploy* (docker-compose + Helm; NixOS was rejected — see
+> [`RFC-001`](../history/rfcs/RFC-001-deployment.md)).
 
 ## 0. Prerequisites
 

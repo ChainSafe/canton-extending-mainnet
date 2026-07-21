@@ -39,6 +39,6 @@ auto-topup, Scan endpoints. See `planning/extending-mainnet-work-plan.md` (WS1).
 
 ## Deployment & ops (target)
 
-- `../deploy/` — NixOS deployment specs (RFC-001).
+- `../deploy/` — deployment overlays: consume Splice compose/Helm + operator-node overlay (RFC-001).
 - `../telemetry/` — uniform observability (RFC-003).
 - `../tools/` — agent-navigation helpers (RFC-002).

@@ -7,6 +7,16 @@ navigates the work. The actual code lives in the `splice/` submodule (the `Chain
 Agents (Claude Code, Codex, etc.) start here — this is the agent-agnostic index. `CLAUDE.md` adds
 Claude-specific notes and defers to this file.
 
+## Engineering handbook (required)
+
+All engineering work on this project follows the **ChainSafe Engineering Handbook**:
+**https://handbook.chainsafe.io/llms.txt** (agent-facing index). Read the relevant pages before
+coding — in particular the **Daml (Canton)** language guide (architect / developer / reviewer
+perspectives), and the **workflow** runbooks (OneFlow trunk-based development, PR authoring, code
+review, testing). The handbook's invariants are non-negotiable; Daml reviews carry `HARD FAIL`
+tier oversight. When handbook guidance conflicts with a note in this repo, the handbook wins for
+engineering practice; this repo wins for project-specific facts (layout, sibling repos, the CIP).
+
 ## Sibling projects
 
 | Project | Where | Role |
@@ -26,7 +36,7 @@ Claude-specific notes and defers to this file.
 - `history/` — RFCs (`rfcs/`), meeting notes (`meetings/`), `experiments/`, `incidents/`, `CHANGELOG.md`.
 - `scripts/` — LocalNet harness (up/down/e2e, multi-sync).
 - `tools/` — agent-navigation helpers (`navigator.sh`; RFC-002).
-- `deploy/` — NixOS deployment specs (skeleton; RFC-001).
+- `deploy/` — deployment overlays: consume Splice compose/Helm + operator-node overlay (RFC-001).
 - `telemetry/` — observability (skeleton; RFC-003).
 - `sync-pricing/` — parked off-ledger pricing analysis.
 
@@ -43,6 +53,7 @@ Claude-specific notes and defers to this file.
 
 ## Conventions
 
+- Follow the ChainSafe Engineering Handbook (https://handbook.chainsafe.io/llms.txt) for all engineering work — see "Engineering handbook (required)" above.
 - Never reference Claude/Anthropic (or any AI tool) in commit messages or PRs.
 - Docs style: direct language; no em/long dashes.
 - Two-repo split: real Splice/Canton code → the fork; harness/tooling/analysis/docs → here.
