@@ -26,7 +26,7 @@ This is a "control center" repo — see [`AGENTS.md`](AGENTS.md) for the full ma
 - `splice/` — submodule -> **`ChainSafe/splice` fork** (the code: Daml + Scala + TS + vendored Canton). Work in it, push to the fork, then `git add splice` in this repo to bump the pointer. Push the submodule before the superproject.
 - `docs/` — `architecture.md`, `design/`, `cip/` (merged from the archived canton-cip-docs), `planning/`, `localnet.md`.
 - `history/` — `rfcs/`, `meetings/`, `experiments/`, `incidents/`, `CHANGELOG.md`.
-- `scripts/` LocalNet harness · `tools/` navigator · `deploy/` NixOS (RFC-001) · `telemetry/` (RFC-003) · `sync-pricing/` parked pricing analysis.
+- `scripts/` LocalNet harness · `tools/` navigator · `deploy/` deployment overlays (RFC-001) · `telemetry/` (RFC-003) · `sync-pricing/` parked pricing analysis.
 
 ## Common commands
 
