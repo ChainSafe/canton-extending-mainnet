@@ -1,4 +1,4 @@
 [submodule "splice"]
 	path = splice
-	url = git@github.com:ChainSafe/splice.git
-	branch = daml-poc-buy-traffic
+	url = git@github.com:canton-network/splice-multi-sync.git
+	branch = multi-sync-poc-buy-traffic
