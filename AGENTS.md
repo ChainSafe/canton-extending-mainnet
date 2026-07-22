@@ -48,6 +48,7 @@ engineering practice; this repo wins for project-specific facts (layout, sibling
 - **Work on the code:** `cd splice`, work on a branch, push to the fork, then `git add splice` here to bump the pointer. **Push the submodule before the superproject.**
 - **Set up your environment:** see `docs/development.md` — clone with the submodule, the Nix/direnv dev shell, and the build/test commands.
 - **Test a change:** see `docs/testing.md` — 3 tiers (Daml Script + Scala integration in the fork; black-box LocalNet e2e here).
+- **Get a PR through CI:** see `docs/splice-ci.md`: the CI gates (`[ci]`/DCO/release-line), the Daml static checks (warts, docs), the Stale-file-handle flake, and the no-force-push PR workflow.
 - **Orient quickly:** `tools/navigator.sh`.
 
 ## Conventions

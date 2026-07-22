@@ -89,6 +89,9 @@ Full guide: **`docs/localnet.md`**.
 - Edit in `splice/`, work on a branch, commit, push to the `ChainSafe/splice` fork.
 - Then in this repo: `git add splice` to bump the pointer + commit. **Push the submodule before the
   superproject**, or the superproject points at a commit nobody else can fetch.
+- **Before you push a fork PR:** read [`splice-ci.md`](splice-ci.md) - the CI gates (`[ci]` + DCO
+  sign-off + release-line branch), the Daml static checks that pass `damlc build` but fail CI (warts,
+  generated docs), the no-force-push rule, and a local pre-flight you can run to pass CI first try.
 
 ## Troubleshooting
 
