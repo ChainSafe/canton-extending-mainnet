@@ -1,125 +1,127 @@
-# Splice CI and PR workflow
+# Splice CI: rules for getting a PR through
 
-How to get a PR through Digital Asset's Splice CI on the first try. Our code lives in the `splice/`
-submodule, whose `origin` is the DA feature fork **`canton-network/splice-multi-sync`**; that fork
-runs DA's own CI (self-hosted runners, private container). Most of our back-and-forth has come from
-a few non-obvious rules below, all of which you can check locally before pushing.
-
-For environment setup and the build/test commands, see [`development.md`](development.md); for the
-test tiers, [`testing.md`](testing.md). This doc is the CI and git-workflow layer on top.
+How to land a change on the DA feature fork (`canton-network/splice-multi-sync`, the `splice/`
+submodule) and pass its CI on the first try. Almost every rule below is invisible to a local
+`daml build` / `daml test`, which is why they cause round-trips. All are checkable locally in the
+dev shell before you push. Env setup + build commands: [`development.md`](development.md); test
+tiers: [`testing.md`](testing.md).
 
 ## PR / git workflow
 
-- **Two rung branches.** The PoC is split into `multi-sync-poc-registration` (rung 1, governance
-  registration) and `multi-sync-poc-buy-traffic` (rung 2, the CC-funded buy). Buy **builds on**
-  registration. A fix to shared/rung-1 code goes on `registration` first, then is **merged** into
-  `buy` (not cherry-picked, not rebased), so the two stay consistent.
-- **Never force-push.** On any branch (fork branches, the `splice/` submodule, this control-center
-  repo). Force-push rewrites history that PRs, CI, and teammates track. Instead: add new commits,
-  **merge** `main`/upstream in when behind (do not rebase), and `git revert` to undo a landed change.
-- **Bake in the CI requirements from the first commit** (below): `[ci]` and `Signed-off-by`. Because
-  we never force-push, you cannot amend them in later without a history rewrite.
-- **Submodule push order.** When you change code in `splice/`: commit and push the submodule to the
-  fork **first**, then `git add splice` here and push the superproject. Otherwise the superproject
-  points at a commit nobody else can fetch.
+- **Two rung branches.** `multi-sync-poc-registration` (rung 1, governance registration) then
+  `multi-sync-poc-buy-traffic` (rung 2, Amulet-funded buy), which **builds on** registration. Land a
+  shared/rung-1 fix on `registration`, then **merge** it into `buy` (never rebase, never cherry-pick).
+- **Never force-push** — fork branches, the submodule, or this repo. Add new commits, **merge** when
+  behind (not rebase), `git revert` to undo.
+- **Bake `[ci]` + `Signed-off-by` into every commit from the start** (see gates) — no force-push
+  means you cannot amend them in later.
+- **Submodule push order:** push `splice/` to the fork first, then `git add splice` + push here.
 
 ## CI setup gates (miss one and the real jobs never run)
 
-1. **`[ci]` opt-in.** CI only runs the real jobs if the branch's **head commit message** contains
-   `[ci]`. Without it, jobs auto-cancel and you see only planner/gate jobs "pass". Put `[ci]` in
-   every commit so any new head (including a merge commit) carries it.
-2. **DCO sign-off.** Every commit needs a `Signed-off-by:` line matching the author. Use
-   `git commit --signoff` (and `git merge --signoff` for merge commits). A missing sign-off fails
-   the DCO check.
-3. **Release-line branch mirror (one-time per release).** A feature fork must contain the upstream
-   `release-line-<version>` branch (for us, `release-line-0.6.11`), or CI's container/runner setup
-   fails with "Fetch release line ... failed". Mirror it from upstream with a normal branch push.
-   See Splice CONTRIBUTING, "Maintaining a feature fork". (Already done for 0.6.11.)
+1. **`[ci]` in the head commit message.** Otherwise the real jobs auto-cancel and only planner/gate
+   jobs "pass". Keep it in every commit so any new head (incl. a merge commit) has it.
+2. **DCO sign-off** on every commit: `git commit --signoff` (and `git merge --signoff`). Must match
+   the author.
+3. **Release-line mirror (one-time per release).** The fork must contain upstream
+   `release-line-<version>` (e.g. `release-line-0.6.11`) or CI's container setup fails ("Fetch
+   release line ... failed"). Push it from upstream. (Done for 0.6.11.)
 
-## Daml static checks (deterministic - fix these locally, never let CI find them)
+## Daml source rules (pass `daml build`, fail CI)
 
-These run in the `static_tests` job **before** any tests, so they gate everything.
+Enforced in `static_tests` before any tests. The three that bite:
 
-- **Daml warts (`scripts/check-daml-warts.sh`).** Bans "naked" `fetch` / `archive`. It is a
-  `git grep` for the words `fetch`, `archive`, and `exercise.*_Fetch`, and it **only ignores
-  full-line `--` comments**. So a **trailing** inline comment that contains the bare word `fetch` or
-  `archive` fails the check, for example:
-  ```
-  p : Party -- ^ the reader; authorizes the fetch     -- FAILS (trailing "fetch")
-  ```
-  Allowed helper identifiers do not match (no word boundary): `fetchAndArchive`,
+- **Warts (`scripts/check-daml-warts.sh`):** no bare `fetch` / `archive`. It `git grep`s for those
+  words and only exempts **full-line** `--` comments, so a *trailing* comment containing "fetch" or
+  "archive" fails. Allowed helpers don't match (no word boundary): `fetchAndArchive`,
   `fetchReferenceData`, `fetchButArchiveLater`, `fetchPublicReferenceData`, `potentiallyUnsafeArchive`.
-  Note: macOS `grep` mishandles the `\b`/`\s` anchors, so a bare local run of the script can report a
-  false "clean". Check with a Linux-equivalent regex (or `git grep -P`).
-- **Generated Daml docs (`gen-daml-docs.sh`, i.e. `dpm docs`).** Runs in `static_tests`
-  ("SBT-based static checks") and in the separate `docs` job. **Do not attach a Haddock `-- |` doc
-  comment directly to a `choice`** - `dpm docs` fails with `parse error on input '-- |'`, while
-  `damlc build` ignores it (so your tests stay green and only the docs build breaks). Convention:
-  choices use plain `--` comments (no choice in `splice-amulet` uses `-- |`). `-- |` is fine on
-  templates, `data`, top-level functions, and module headers; `-- ^` is fine on choice `with`-fields.
-  Test scripts (`**.Scripts.**`) are excluded from doc generation, so their comments never matter.
-- **Other static steps** (rarely an issue, but they exist): trailing whitespace, Daml return-types
-  check, Daml interface-implementations check, TODO format, GitHub-Actions lint, docker base images
-  pinned by digest, npm package namespacing.
-- **New Scala test files** require `sbt updateTestConfigForParallelRuns` and committing the updated
-  root `test-*.log` (checked by the "Verify no changes in SBT test files" step).
-- **Checked-in DARs + `daml/dars.lock` (`DarLockChecker`).** Any change to Daml source changes the
-  compiled DAR, so you must regenerate the checked-in artifacts or `static_tests` fails with
-  "update the checked-in DAR" / "daml lockfile is not up-to-date". Run `sbt damlDarsLockFileUpdate`
-  (rebuilds all DARs, refreshes `daml/dars/*.dar` and `daml/dars.lock`) and commit the result; the
-  binary DAR commit is expected. It also refreshes dependents that embed your package. You do NOT
-  need a version bump unless your package's current version already exists in the release line
-  (check `git show origin/release-line-<ver>:daml/dars.lock`); if it does, bump first with
-  `sbt 'damlBumpPackageVersionsMutate origin/main'`. Note: this check runs after the docs check in
-  the same step, so a docs failure masks it (fix docs first, then this appears).
+- **Doc comments on choices (`gen-daml-docs.sh` / `dpm docs`):** never attach a Haddock `-- |` doc
+  comment to a `choice` (`parse error on input '-- |'`). Choices use plain `--`. `-- |` is fine on
+  templates / `data` / functions / modules; `-- ^` is fine on fields. `**.Scripts.**` (tests) are
+  excluded from docs.
+- **Terminology / "whitelabel" (`scripts/rename.sh no_illegal_daml_references`):** Splice scrubs
+  branded/legacy terms from Daml. **Banned words** (case-insensitive, anywhere in `daml/`): `global`,
+  `coin`, `domain`, `cn`, `collective`, `consortium`, `whitepaper`, `currency`, `founder`/`founding`,
+  `leader`, `google`, `DsoReward`. **Restricted phrasings:** `DSO` only as `DSO party` / `DSO
+  governance` / `DSO rules` / `DSO delegate` / `DSO-level` / `DSO automation`; no bare `Dso`/`dso` in
+  comments except `DsoRules` / `dsoParty`; no bare `CC`/`cc`; no bare `member`. Substitutions we use:
+
+  | Instead of | Write |
+  |---|---|
+  | global synchronizer / non-global | decentralized synchronizer / dedicated |
+  | CC, Canton Coin | Amulet |
+  | "the DSO", "a DSO vote", "DSO of X" | "the DSO party", "DSO governance" |
+  | `splice-dso-governance` (in a comment) | "the governance package" |
+  | `expectedDso` / `ForDso` (in a comment) | "the expected DSO party" / "MemberTraffic group-id" |
+
+  macOS `grep`/`rg` can't replicate the PCRE faithfully — run the real check in the dev shell (it
+  needs `TOOLS_LIB` + `rg`, both provided there).
+
+Others rarely bite: trailing-whitespace, Daml return-types, Daml interface-impls, GHA lint,
+image-digest pinning, npm namespacing. `check-todos` needs `GITHUB_TOKEN` (unrunnable locally, passes
+in CI). `check-repo-names` currently fails on **pre-existing** Splice files only — not our code and
+not a gating step.
+
+## Regenerate generated artifacts on ANY Daml change (even a comment)
+
+A Daml source change changes the compiled DAR, so `static_tests` (`SBT-based static checks` +
+`Verify no changes in SBT test files`) fails until you regenerate and commit:
+
+1. `sbt damlDarsLockFileUpdate` — refreshes checked-in `daml/dars/*.dar` + `daml/dars.lock`
+   (`DarLockChecker`). Committing the binary DARs is expected. **No version bump** unless the
+   package version already exists in the release line
+   (`git show origin/release-line-<ver>:daml/dars.lock`); if it does, run
+   `sbt 'damlBumpPackageVersionsMutate origin/main'` first.
+2. `sbt updateDarResources updateTestConfigForParallelRuns` — regenerates
+   `apps/.../environment/DarResources.scala` (the generated file pinning each DAR's package-id) and
+   test config. Commit the regenerated `DarResources.scala`, or `Verify no changes in SBT test files`
+   fails.
+
+These run inside `SBT-based static checks` in order (docs -> DarLock -> DarResources), so an earlier
+failure masks a later one; expect them to surface one at a time.
 
 ## Smart-contract upgrade (SCU) compatibility
 
-Splice packages are upgradeable, so a separate check compares your package against the released one.
-`damlc build` and the Daml tests pass regardless, so these bite late (the upgrade/compat check, or
-package vetting on a live network). Rules that have already bitten us:
-- **Append new variant constructors LAST.** LF encodes constructor ranks, so inserting a constructor
-  mid-variant (for example into `DsoRules_ActionRequiringConfirmation`) re-ranks the following ones
-  and breaks upgrade-compat with the released package. Add new `SRARC_*` (and any serializable
-  variant constructor) after all existing ones, immediately before `deriving`. Matching is by name,
-  so the `case` arms and the choices can stay wherever they read best.
-- **Additive-only for released types:** new templates, new choices on existing templates, and new
-  record types are fine. Do not reorder or remove existing constructors, and do not change the field
-  order of a released serializable record.
+`daml build` + tests pass regardless, so these bite late (compat check / package vetting):
 
-## The infra flake (not your code)
+- **Append new serializable-variant constructors LAST** (LF encodes constructor ranks). A new
+  `SRARC_*` in `DsoRules_ActionRequiringConfirmation` goes after all existing ones, before
+  `deriving`. Matching is by name, so `case` arms / choices can sit anywhere.
+- **Additive-only for released types:** new templates, new choices, new records are fine; do not
+  reorder/remove constructors or change field order of a released serializable record.
 
-DA's self-hosted runners share a Maven/Nix cache that intermittently throws
-`java.io.IOException (Stale file handle)` while downloading dependencies or building the Nix
-environment. It surfaces as `daml_test`, `scala_test_*`, `docs`, or `ui_tests` failing at their
-"Run ..." / "Build ..." step. It is infrastructure, not our code. When a job is red, read the
-**failing step's log**, not just the red X: if it says "download error: ... Stale file handle" or
-"Failed to build and enter the nix environment", just re-run. Tracked in DACH-NY/cn-test-failures.
+## Infra flakes (not your code — re-run)
 
-## Local pre-flight (run before every push)
+DA's shared self-hosted runners flake in two ways. Read the **failing step's log**, not just the red X:
 
-In the dev shell (see [`development.md`](development.md); on macOS make sure `nix` is on PATH):
+- **Stale file handle** (`java.io.IOException`) during Maven download / nix-env build. Hits
+  `daml_test`, `scala_test_*`, `docs`, `ui_tests` at their "Run/Build" step.
+- **wall-clock-time timeout** (exit code **124**): heavy scala integration shards run out of time
+  (~40+ min) under load — the tests themselves pass (`Failed 0, Errors 0`), the shard just doesn't
+  finish. Known DA issue (`timeout-minutes: 60 # TODO(#3013)`).
+
+Fix: re-run the failed jobs — `gh run rerun <run-id> --failed`. If they keep timing out it is DA
+infra, unrelated to our additive Daml; raise it with DA rather than changing our code.
+
+## Local pre-flight (dev shell; on macOS ensure `nix` is on PATH)
 
 ```
 cd splice
 
-# 1. Daml Script tests (should be all green)
+# 1. Daml Script tests
 direnv exec . sbt 'splice-amulet-test-daml/Test/damlTest' 'splice-dso-governance-test-daml/Test/damlTest'
 
-# 2. Daml docs generation for each package you touched (must exit 0)
-#    (mirrors gen-daml-docs.sh; excludes test scripts)
-for pkg in daml/splice-amulet daml/splice-dso-governance; do
-  ( cd "$pkg" && direnv exec . dpm docs $(find daml -name '*.daml') \
-      --exclude-modules '**.Scripts.**' -f rst -o /tmp/docs-$(basename $pkg) ) \
-    && echo "docs OK: $pkg"
-done
+# 2. Docs, per changed package (must exit 0)
+( cd daml/splice-amulet && direnv exec . dpm docs $(find daml -name '*.daml') \
+    --exclude-modules '**.Scripts.**' -f rst -o /tmp/docs-amulet )
 
-# 3. Daml warts (use a Linux-equivalent grep; the raw script under-reports on macOS)
+# 3. Terminology (authoritative; needs the dev shell)
+direnv exec . bash scripts/rename.sh no_illegal_daml_references
 
-# 4. If you changed any Daml source: refresh checked-in DARs + dars.lock, then commit the result
-direnv exec . sbt 'damlDarsLockFileUpdate'
-git status -s daml/dars.lock daml/dars/
+# 4. If any Daml source changed: regenerate + stage the artifacts
+direnv exec . sbt 'damlDarsLockFileUpdate' 'updateDarResources' 'updateTestConfigForParallelRuns'
+git add daml/dars.lock daml/dars '**/DarResources.scala' test*.log
 ```
 
-If 1-4 pass, your Daml changes are SCU-safe (see the section above), and your commits carry `[ci]` +
-`Signed-off-by`, the only remaining CI risk is the Stale-file-handle flake above.
+If 1-4 are clean, the change is SCU-safe (above), and every commit carries `[ci]` + `Signed-off-by`,
+the only remaining CI risk is the infra flakes.
