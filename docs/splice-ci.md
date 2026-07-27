@@ -13,25 +13,28 @@ and push to the remote that is `canton-network/splice-multi-sync` (below we call
 
 ## PR / git workflow
 
-- **Two rung branches.** `multi-sync-poc-registration` (rung 1, governance registration) then
-  `multi-sync-poc-buy-traffic` (rung 2, Amulet-funded buy), which **builds on** registration. Land a
-  shared/rung-1 fix on registration, then **merge** it into buy (never rebase, never cherry-pick):
-  ```
-  git push origin multi-sync-poc-registration
-  git checkout multi-sync-poc-buy-traffic
-  git merge --signoff multi-sync-poc-registration   # then resolve, regenerate artifacts (below)
-  git push origin multi-sync-poc-buy-traffic
-  ```
-- **Never force-push** — fork branches, the submodule, or this repo. Add new commits, **merge** when
-  behind (not rebase), `git revert` to undo.
-- **Bake `[ci]` + `Signed-off-by` into every commit from the start** (see gates) — no force-push
-  means you cannot amend them in later.
-- **Submodule push order:** push `splice/` to `origin` first, then `git add splice` + push here.
+- **Stack PRs when the work depends on unmerged work.** Base the PR on the branch it builds on, not
+  `main`; GitHub retargets it to `main` when the base merges. Fixes to shared/base work flow
+  downstack: land them on the base branch, then the dependent branch absorbs them (merge `main`, or
+  rebase onto it after the base squashes; owner's choice). Stacks are queues for `main`, not
+  long-lived lines. (The PoC ran this way: `multi-sync-poc-registration`, then
+  `multi-sync-poc-buy-traffic` on top.)
+- **Everything squash-merges into `main`.** Each PR lands as a single commit (the upstream Splice
+  convention; recent `main` is one commit per PR), which keeps each reviewed unit cleanly revertable
+  and keeps PR-discussion fixups in the PR record rather than `main`'s history. The squash commit
+  message must carry `[ci]` and `Signed-off-by`. (Merge method is a repo setting on
+  `canton-network/splice-multi-sync`; confirm it is squash, or ask DA.)
+- **Do not rewrite shared history.** Never rewrite `main` or `release-line-*`, and coordinate before
+  rewriting a branch someone else has stacked on. Otherwise force-pushing or amending your own open
+  PR branch is fine; with submodule pins restricted to `main` and squash-merge, it breaks nothing.
+- **`[ci]` on the head commit.** The branch tip must carry `[ci]` or the real jobs auto-cancel (see
+  gates); a new head from a merge or an amend needs it too.
+- **Submodule push order:** push `splice/` to its remote first, then `git add splice` and push here.
 
 ## CI setup gates (miss one and the real jobs never run)
 
 1. **`[ci]` in the head commit message.** Otherwise the real jobs auto-cancel and only planner/gate
-   jobs "pass". Keep it in every commit so any new head (incl. a merge commit) has it.
+   jobs "pass". Any new head (a merge, an amend, or a squash commit) needs it too.
 2. **DCO sign-off** on every commit: `git commit --signoff` (and `git merge --signoff`). Must match
    the author.
 3. **Release-line mirror (one-time per release).** The fork must contain upstream
