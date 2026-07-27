@@ -1,7 +1,7 @@
 # Development: environment setup + running tests
 
 A followable guide to get from a fresh clone to building and testing the Daml PoC. The code lives in
-the `splice/` submodule (the `ChainSafe/splice` fork); it builds with **Splice's upstream Nix dev
+the `splice/` submodule (the `canton-network/splice-multi-sync` fork); it builds with **Splice's upstream Nix dev
 shell** (provides `dpm` / `sbt` / JDK / `damlc`) loaded by direnv. Deeper Splice-specific details:
 `splice/DEVELOPMENT.md`.
 
@@ -22,7 +22,7 @@ git clone --recurse-submodules git@github.com:ChainSafe/canton-extending-mainnet
 # already cloned without submodules?
 git submodule update --init splice
 ```
-The `splice/` submodule tracks the fork's `daml-poc-buy-traffic` branch (carries the PoC).
+The `splice/` submodule tracks the fork's `multi-sync-poc-buy-traffic` branch (carries the PoC).
 
 ## 2. One-time environment setup (Nix + direnv)
 
@@ -86,7 +86,7 @@ Full guide: **`docs/localnet.md`**.
 
 ## 5. Working on the code (submodule workflow)
 
-- Edit in `splice/`, work on a branch, commit, push to the `ChainSafe/splice` fork.
+- Edit in `splice/`, work on a branch, commit, push to the `canton-network/splice-multi-sync` fork.
 - Then in this repo: `git add splice` to bump the pointer + commit. **Push the submodule before the
   superproject**, or the superproject points at a commit nobody else can fetch.
 
