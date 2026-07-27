@@ -56,3 +56,11 @@ engineering practice; this repo wins for project-specific facts (layout, sibling
 - Never reference Claude/Anthropic (or any AI tool) in commit messages or PRs.
 - Docs style: direct language; no em/long dashes.
 - Two-repo split: real Splice/Canton code → the fork; harness/tooling/analysis/docs → here.
+
+## Branching & submodule policy
+
+- **Branch off `main`** for all dev work, in this repo and in the `splice/` submodule's fork alike.
+- **Stacked PRs are allowed** when work builds on unmerged work (base the PR on the prior branch; it retargets to `main` when the base merges). Stacks are queues for `main`: merge them promptly; long-lived stacked branches get rewritten, which orphans anything pinned to them.
+- **Everything merges into `main`.** No long-lived alternative lines.
+- **The `splice/` submodule pins commits on the fork's `main` only** (`.gitmodules` tracks `branch = main`). In-flight PR state is never pinned here; to work on an unmerged feature branch, check it out inside `splice/` locally.
+- Bump the submodule pointer via `git add splice` **after** the commit is on the fork's `main`, and push the submodule before the superproject.
