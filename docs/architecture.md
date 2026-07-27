@@ -11,7 +11,7 @@ the purchased traffic on its own sequencer. See `design/extension-traffic-manage
 
 ## Repos & where code lives
 
-- **Code:** the `splice/` submodule (`ChainSafe/splice` fork) — Daml (`daml/splice-amulet`,
+- **Code:** the `splice/` submodule (`canton-network/splice-multi-sync` fork) — Daml (`daml/splice-amulet`,
   `daml/splice-dso-governance`), Scala apps (`apps/sv`, `apps/validator`, `apps/scan`), Helm
   (`cluster/`), vendored Canton (`canton/`). One monorepo; no other fork needed.
 - **Control center (this repo):** docs, plans, harness, analysis. Little product code.
@@ -20,7 +20,7 @@ the purchased traffic on its own sequencer. See `design/extension-traffic-manage
 
 - `RegisteredSynchronizer` + `DsoRules_RegisterSynchronizer` — governance registration.
 - `AmuletRules_BuyDedicatedSyncTraffic` + `DedicatedSyncTraffic` — CC-funded buy; reuses
-  `computeSynchronizerFees` + `splitAndBurn`. PoC on branch `daml-poc-buy-traffic` (PRs #1/#2).
+  `computeSynchronizerFees` + `splitAndBurn`. PoC on branch `multi-sync-poc-buy-traffic` (PRs #1/#2).
 
 ## Off-ledger (planned)
 
