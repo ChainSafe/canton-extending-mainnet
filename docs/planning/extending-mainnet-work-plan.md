@@ -1,5 +1,7 @@
 # Work Plan — Extending Mainnet: Dedicated Synchronizer Traffic
 
+> **Snapshot notice (2026-07-27).** This document generated the GitHub issues and is kept as a point-in-time snapshot; **the issues in this repo are canonical** and have diverged from the blocks below. In particular, the buy-rung shape was settled after this was written: the sibling `AmuletRules_BuyDedicatedSyncTraffic` / `DedicatedSyncTraffic` design described in E1-3, E2-4, E5 and E6 was dropped in favor of extending `AmuletRules_BuyMemberTraffic` with a registered-synchronizer gate and an operator observer on `MemberTraffic`. The PoC is implemented in that shape, tested, and CI-green on `canton-network/splice-multi-sync` PRs #1/#2 — E0 is complete and the status table below is stale.
+
 ## Context
 
 ChainSafe is co-designing and piloting the Canton CIP *"Extending Mainnet: Tokenomics
