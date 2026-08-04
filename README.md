@@ -43,8 +43,8 @@ Plus the working pieces: **`splice/`** (submodule → the code), **`scripts/`** 
 
 | Repo | Role |
 |---|---|
-| **canton-extending-mainnet** (this, private) | The control center: docs, plans, harness, analysis, coordination. Issue epics **T0** (harness/dev-env) + **T1** (analysis/DA). |
-| **canton-network/splice-multi-sync** (DA's fork; the `splice/` submodule) | **The code** — DA's multi-sync feature fork of `canton-network/splice` (monorepo: Daml `daml/` + `token-standard/`, Scala `apps/`, TS frontends, vendored Canton `canton/`, Helm `cluster/`). PoC on `multi-sync-poc-buy-traffic`; draft PRs #1/#2 there run DA's CI. Issue epics **E0–E10**. (Originally developed on the `ChainSafe/splice` fork — now superseded by this one.) |
+| **canton-extending-mainnet** (this) | The control center: docs, plans, harness, analysis, coordination. Issue epics **T0** (harness/dev-env) + **T1** (analysis/DA). |
+| **canton-network/splice-multi-sync** (DA's fork; the `splice/` submodule) | **The code** — DA's multi-sync feature fork of `canton-network/splice` (monorepo: Daml `daml/` + `token-standard/`, Scala `apps/`, TS frontends, vendored Canton `canton/`, Helm `cluster/`). PoC on `multi-sync-poc-registration` / `multi-sync-poc-buy-traffic`; PRs #1/#2 there run DA's CI. Issue epics **E0–E10**. (Originally developed on the `ChainSafe/splice` fork — now superseded by this one.) |
 | **ChainSafe/canton-cip-docs** | Archived — CIP design docs merged here under `docs/cip/`. |
 
 See [`AGENTS.md`](AGENTS.md) for the full sibling list (x402 facilitator, MCP server, burn
@@ -69,11 +69,12 @@ snapshotter, platform docs, …).
 
 ## Status
 
-- **Done:** the Daml PoC **compiles and all Daml Script tests pass** — governance registration
-  (`RegisteredSynchronizer` + `DsoRules_RegisterSynchronizer`) and CC-funded buy
-  (`AmuletRules_BuyDedicatedSyncTraffic` + `DedicatedSyncTraffic`), including negative tests. Ported
-  to `canton-network/splice-multi-sync` as draft PRs #1/#2 to run DA's CI. Plus: the multi-sync
-  LocalNet harness (verified) and the shadow pricing engine (green).
+- **Done:** the Daml PoC **compiles and all Daml Script tests pass**, including negative tests:
+  governance registration (`RegisteredSynchronizer` + `DsoRules_RegisterSynchronizer`) and CC-funded
+  buy, which extends the existing `AmuletRules_BuyMemberTraffic` with a registered-synchronizer gate
+  and adds an operator observer on `MemberTraffic`. Ported to `canton-network/splice-multi-sync` as
+  PRs #1/#2, running DA's CI and open for review with reviewer feedback applied. Plus: the
+  multi-sync LocalNet harness (verified) and the shadow pricing engine (green).
 - **Next + roadmap:** [`docs/planning/`](docs/planning). This README is intentionally a thin front
   door; the sequenced roadmap and per-workstream detail live there, not here.
 
