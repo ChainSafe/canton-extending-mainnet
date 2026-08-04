@@ -57,9 +57,11 @@ and push to the remote that is `canton-network/splice-multi-sync` (below we call
   because `fetch` followed by a capital letter has no word boundary; `potentiallyUnsafeArchive` /
   `fetchAndArchive` because the pattern `archive` is lowercase and they use capital `Archive`.
 - **Doc comments on choices (`gen-daml-docs.sh` / `dpm docs`):** never attach a Haddock `-- |` doc
-  comment to a `choice` (`parse error on input '-- |'`). Surfaces in the separate `docs` job **and**
-  in `static_tests` (`Test/compile` builds the docs project's generated resources). Choices use plain
-  `--`. `-- |` is fine on templates / `data` / functions / modules; `-- ^` is fine on fields.
+  comment *before* a `choice` (`parse error on input '-- |'`). Surfaces in the separate `docs` job
+  **and** in `static_tests` (`Test/compile` builds the docs project's generated resources). To
+  document a choice, put `-- ^` on the line *after* the `choice ... : Result` declaration; that is
+  the in-tree idiom (`DsoRules_GarbageCollectAmuletPriceVotes`, `DsoRules.daml:935-938`, and many
+  others). `-- |` is fine on templates / `data` / functions / modules; `-- ^` is fine on fields.
   `**.Scripts.**` (tests) are excluded from doc generation.
 - **Terminology / "whitelabel" (`scripts/rename.sh no_illegal_daml_references`):** Splice scrubs
   branded/legacy terms from Daml. **Banned words** (case-insensitive, anywhere in `daml/`): `global`,
@@ -114,6 +116,11 @@ What you run locally to satisfy them and commit the results:
 - `sbt updateDarResources updateTestConfigForParallelRuns` — regenerates `DarResources.scala` +
   `test*.log`; commit them or `Verify no changes in SBT test files` fails.
 
+**Merging up with conflicts in the generated files.** The regen tasks patch incrementally and skip
+any file containing conflict markers, so markers in `daml/dars.lock` or `DarResources.scala` survive
+`damlDarsLockFileUpdate` and land in the commit. Resolve them to anything parseable first, then
+regen.
+
 ## Smart-contract upgrade (SCU) compatibility
 
 `daml build` + tests pass regardless, so these bite late (compat check / package vetting):
@@ -122,7 +129,9 @@ What you run locally to satisfy them and commit the results:
   `SRARC_*` in `DsoRules_ActionRequiringConfirmation` goes after all existing ones, before
   `deriving`. Matching is by name, so `case` arms / choices can sit anywhere.
 - **Additive-only for released types:** new templates, new choices, new records are fine; do not
-  reorder/remove constructors or change field order of a released serializable record.
+  reorder/remove constructors or change field order of a released serializable record. Appending an
+  `Optional` field to a released record, or to a choice's parameters, is upgrade-legal as long as it
+  goes last (`MemberTraffic.operator` and `optRegisteredSynchronizer` are the live examples).
 
 ## Required jobs + infra flakes
 
