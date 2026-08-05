@@ -59,8 +59,8 @@ engineering practice; this repo wins for project-specific facts (layout, sibling
 
 ## Branching & submodule policy
 
-- **Branch off `main`** for all dev work, in this repo and in the `splice/` submodule's fork alike.
-- **Stacked PRs are allowed** when work builds on unmerged work (base the PR on the prior branch; it retargets to `main` when the base merges). Stacks are queues for `main`: merge them promptly; long-lived stacked branches get rewritten, which orphans anything pinned to them.
-- **Everything merges into `main`.** No long-lived alternative lines.
-- **The `splice/` submodule pins commits on the fork's `main` only** (`.gitmodules` tracks `branch = main`). In-flight PR state is never pinned here; to work on an unmerged feature branch, check it out inside `splice/` locally.
-- Bump the submodule pointer via `git add splice` **after** the commit is on the fork's `main`, and push the submodule before the superproject.
+- **This repo: branch off `main`; everything merges into `main`.** No long-lived alternative lines.
+- **The fork (`canton-network/splice-multi-sync`): PoC work branches off and merges into the long-running `feat/dedicated-sync`** (DA's direction, so their `main` stays a clean mirror of upstream `canton-network/splice`). Never commit to the fork's `main`.
+- **Stacked PRs are allowed** when work builds on unmerged work (base the PR on the prior branch; retarget the child to the merge target before the parent's branch is deleted). Stacks are queues for the merge target: merge them promptly; long-lived stacked branches get rewritten, which orphans anything pinned to them.
+- **The `splice/` submodule pins commits on the fork's `feat/dedicated-sync` only** (`.gitmodules` tracks `branch = feat/dedicated-sync`). In-flight PR state is never pinned here; to work on an unmerged feature branch, check it out inside `splice/` locally.
+- Bump the submodule pointer via `git add splice` **after** the commit is on `feat/dedicated-sync`, and push the submodule before the superproject.
