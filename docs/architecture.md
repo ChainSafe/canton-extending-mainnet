@@ -32,7 +32,7 @@ auto-topup, Scan endpoints. See `planning/extending-mainnet-work-plan.md` (WS1).
 - `design/` — our implementation design.
 - `cip/` — CIP technical plan, kickoff, exec summary, diagrams, presenter notes (merged from the
   archived `canton-cip-docs`).
-- `planning/` — epics/issues across both repos.
+- `planning/` — the work plan behind the epics/issues (all tracked in this repo).
 - `localnet.md` — how to run the local end-to-end environment.
 - `testing.md` — the 3-tier testing strategy (Daml Script + Scala integration in the fork; LocalNet e2e here).
 - `../history/` — RFCs, meetings, experiments, incidents, changelog.

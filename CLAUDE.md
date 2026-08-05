@@ -8,7 +8,7 @@ Guidance for Claude Code when working in this repository. **Read [`AGENTS.md`](A
 
 **This is a standalone project. It is NOT related to `canton-middleware`** (a separate ChainSafe repo). Do not reference, import from, or write to canton-middleware.
 
-- **Repo roles:** this repo (`ChainSafe/canton-extending-mainnet`, private) is the **tooling / analysis / docs / planning** hub. The actual on-ledger + app **code** changes live in the Splice fork `canton-network/splice-multi-sync` (PoC PRs #1/#2; issue epics E0-E10). See `README.md`.
+- **Repo roles:** this repo (`ChainSafe/canton-extending-mainnet`) is the **tooling / analysis / docs / planning** hub and the **issue tracker for all epics** (T0/T1 + E0-E10). The actual on-ledger + app **code** changes live in the Splice fork `canton-network/splice-multi-sync` (the PoC ladder, merging into the long-running `feat/dedicated-sync`). See `README.md`.
 - **Design docs / analysis:** now in this repo under `docs/cip/` (technical plan, kickoff, diagrams, exec summary, presenter notes) - merged in from the former `ChainSafe/canton-cip-docs`, which is **archived**. Working design + planning live under `docs/design/` and `docs/planning/`.
 - **ChainSafe's role:** as a Super Validator and prospective dedicated-synchronizer operator, co-designing and piloting the CIP with Digital Asset.
 
