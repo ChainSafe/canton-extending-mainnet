@@ -21,7 +21,7 @@ engineering practice; this repo wins for project-specific facts (layout, sibling
 
 | Project | Where | Role |
 |---|---|---|
-| splice (fork) | `splice/` submodule → github.com/canton-network/splice-multi-sync | **THE CODE.** Monorepo: Daml (`daml/`, `token-standard/`), Scala (`apps/`), TS frontends, vendored Canton (`canton/`), Helm (`cluster/`). All CIP feature changes land here (PoC on `multi-sync-poc-buy-traffic`). |
+| splice (fork) | `splice/` submodule → github.com/canton-network/splice-multi-sync | **THE CODE.** Monorepo: Daml (`daml/`, `token-standard/`), Scala (`apps/`), TS frontends, vendored Canton (`canton/`), Helm (`cluster/`). All CIP feature changes land here; the PoC ladder merges into the long-running `feat/dedicated-sync`. |
 | canton-x402-facilitator / -sdk | github.com/ChainSafe/canton-x402-* | x402 payment facilitator + SDK; source of our LocalNet harness pattern. |
 | canton-mcp-server | github.com/ChainSafe/canton-mcp-server | MCP server for Canton dev — integration point for agent-navigation tooling (RFC-002). |
 | canton-burn-snapshotter | github.com/ChainSafe/canton-burn-snapshotter | Tracks Canton burn for traffic decisions — adjacent to our traffic feature. |
