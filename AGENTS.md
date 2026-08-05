@@ -56,3 +56,11 @@ engineering practice; this repo wins for project-specific facts (layout, sibling
 - Never reference Claude/Anthropic (or any AI tool) in commit messages or PRs.
 - Docs style: direct language; no em/long dashes.
 - Two-repo split: real Splice/Canton code → the fork; harness/tooling/analysis/docs → here.
+
+## Branching & submodule policy
+
+- **This repo: branch off `main`; everything merges into `main`.** No long-lived alternative lines.
+- **The fork (`canton-network/splice-multi-sync`): PoC work branches off and merges into the long-running `feat/dedicated-sync`** (DA's direction, so their `main` stays a clean mirror of upstream `canton-network/splice`). Never commit to the fork's `main`.
+- **Stacked PRs are allowed** when work builds on unmerged work (base the PR on the prior branch; retarget the child to the merge target before the parent's branch is deleted). Stacks are queues for the merge target: merge them promptly; long-lived stacked branches get rewritten, which orphans anything pinned to them.
+- **The `splice/` submodule pins commits on the fork's `feat/dedicated-sync` only** (`.gitmodules` tracks `branch = feat/dedicated-sync`). In-flight PR state is never pinned here; to work on an unmerged feature branch, check it out inside `splice/` locally.
+- Bump the submodule pointer via `git add splice` **after** the commit is on `feat/dedicated-sync`, and push the submodule before the superproject.
