@@ -13,20 +13,26 @@ and push to the remote that is `canton-network/splice-multi-sync` (below we call
 
 ## PR / git workflow
 
+- **The fork's merge target is `feat/dedicated-sync`**, DA's long-running feature branch (their
+  direction), so the fork's `main` stays a clean mirror of upstream `canton-network/splice` and
+  never takes our commits. `main` remains the target in this repo.
 - **Stack PRs when the work depends on unmerged work.** Base the PR on the branch it builds on, not
-  `main`; GitHub retargets it to `main` when the base merges. Fixes to shared/base work flow
-  downstack: land them on the base branch, then the dependent branch absorbs them (merge `main`, or
-  rebase onto it after the base squashes; owner's choice). Stacks are queues for `main`, not
-  long-lived lines. (The PoC ran this way: `multi-sync-poc-registration`, then
-  `multi-sync-poc-buy-traffic` on top.)
-- **Everything squash-merges into `main`.** Each PR lands as a single commit (the upstream Splice
-  convention; recent `main` is one commit per PR), which keeps each reviewed unit cleanly revertable
-  and keeps PR-discussion fixups in the PR record rather than `main`'s history. The squash commit
-  message must carry `[ci]` and `Signed-off-by`. (Merge method is a repo setting on
-  `canton-network/splice-multi-sync`; confirm it is squash, or ask DA.)
-- **Do not rewrite shared history.** Never rewrite `main` or `release-line-*`, and coordinate before
-  rewriting a branch someone else has stacked on. Otherwise force-pushing or amending your own open
-  PR branch is fine; with submodule pins restricted to `main` and squash-merge, it breaks nothing.
+  the merge target. Fixes to shared/base work flow downstack: land them on the base branch, then the
+  dependent branch absorbs them (merge, or rebase onto the target after the base squashes; owner's
+  choice). Stacks are queues for the merge target, not long-lived lines. (The PoC ran this way:
+  `multi-sync-poc-registration`, then `multi-sync-poc-buy-traffic` on top.)
+- **Retarget the child before deleting a merged parent's branch.** GitHub only auto-retargets
+  dependent PRs when the branch is deleted through the web UI's post-merge button; `gh pr merge
+  --delete-branch` deletes the raw ref and **closes** dependent PRs instead. `gh pr edit <child>
+  --base <target>` first, then merge and delete.
+- **Everything squash-merges into the target.** Each PR lands as a single commit (the upstream
+  Splice convention), which keeps each reviewed unit cleanly revertable and keeps PR-discussion
+  fixups in the PR record rather than the target's history. The squash commit message must carry
+  `[ci]` and `Signed-off-by`. (Rungs 1–2 landed on `feat/dedicated-sync` this way.)
+- **Do not rewrite shared history.** Never rewrite `main`, `release-line-*`, or
+  `feat/dedicated-sync` once others build on it, and coordinate before rewriting a branch someone
+  else has stacked on. Otherwise force-pushing or amending your own open PR branch is fine; with
+  submodule pins restricted to `feat/dedicated-sync` and squash-merge, it breaks nothing.
 - **`[ci]` on the head commit.** The branch tip must carry `[ci]` or the real jobs auto-cancel (see
   gates); a new head from a merge or an amend needs it too.
 - **Submodule push order:** push `splice/` to its remote first, then `git add splice` and push here.
@@ -85,6 +91,11 @@ and push to the remote that is `canton-network/splice-multi-sync` (below we call
   | `splice-dso-governance` (in a comment) | "the governance package" |
   | `expectedDso` / `ForDso` (in a comment) | "the expected DSO party" / "MemberTraffic group-id" |
 
+  Two more ways it bites: the check is a **line-based** regex, so an allowed phrase that wraps
+  across comment lines fails (`...by DSO` / newline / `automation...` — keep "DSO automation" and
+  friends on one line); and the case-sensitive `cc` token matches inside hex literals, so test
+  synchronizer ids like `1220cccc...` fail — use `aa`/`dd`/`ee` runs in test data.
+
   macOS `grep`/`rg` can't replicate the PCRE faithfully — run the real check in the dev shell (it
   needs `TOOLS_LIB` + `rg`, both provided there).
 
@@ -141,7 +152,22 @@ The `final_result` gate requires: `static_tests`, `docs`, `daml_test`, `deployme
 `deployment_test` is required even for a static-only PR (opt-in via a `[static]` flag / `static`
 label). So a green `static_tests` alone is not enough.
 
-DA's shared self-hosted runners flake in two ways — read the **failing step's log**, not the red X:
+**A job can fail while sbt succeeds.** CI wraps sbt with an output scanner and a post-step log
+check, so read the failing step's log before assuming a test broke:
+
+- **Zero `DsWarning`s.** Any Daml warning line in the build output fails the job, even on sbt
+  `[success]`. The ones that have bitten: a tuple of size >5 in a Script return type ("Daml only
+  has Show/Eq for tuples of size <= 5" — use a record), an unused binding, a non-exhaustive `case`.
+- **The canton runtime log check.** The scala_test wrapper ends with
+  `(checkErrors) log/canton_network_test.clog contains problems` when canton nodes logged
+  above-threshold noise during an otherwise green run; under runner load this fires as a flake
+  (all tests passed — re-run).
+- **Diagnosis:** the trailer "Executing the custom container implementation failed. Please contact
+  your self hosted runner administrator" is the runner's generic message for any failed step, not
+  evidence of infra. Grep the job log for `Tests: succeeded` first: sbt-green plus job-red is
+  always scanner or infra, never code.
+
+DA's shared self-hosted runners flake in recognizable ways — read the **failing step's log**, not the red X:
 
 - **Stale file handle** (`java.io.IOException`) during Maven download / nix-env build. Hits
   `daml_test`, `scala_test_*`, `docs`, `ui_tests`, `deployment_test` at their "Run/Build" step.
@@ -149,17 +175,30 @@ DA's shared self-hosted runners flake in two ways — read the **failing step's 
   (~40+ min) under load — the tests themselves pass, the shard just doesn't finish. Individual slow
   tests (e.g. token settlement) can also exceed their `eventually` wait under load. The failing set
   varies run-to-run (= load, not broken tests). Known DA issue (`timeout-minutes: 60 # TODO(#3013)`).
+- **`connect ETIMEDOUT`** before any real work ran.
+- **`SEQUENCER_SUBMISSION_AFTER_UPGRADE_TIME`** WARN in `roll_forward_lsu`: a submission racing the
+  upgrade cutoff; the suite passes, the log scanner fails the job.
+- **simtime `TrafficBasedRewardsTimeBasedIntegrationTest`** stuck at `...ActivityTotalsUndetermined`
+  (an `eventually` timeout under load).
+- **splitwell frontend** Selenium `Could not find IdQuery(...)` element-lookup timeouts.
+- **docker-compose**: sbt boot-server IPC `EADDRINUSE` during the parallel make kills the DAR
+  build, "Waiting for all services" never opens, and the job hangs to a ~55-min cancel.
 
 Fix: re-run the failed jobs — `gh run rerun <run-id> --failed`. If they keep failing on tests
 unrelated to your change, it is DA infra — raise it with DA rather than changing our code.
+
+Also cosmetic: a force-push can fire two `pull_request` events a second apart; the concurrency
+group cancels one, and the cancelled run's torn-down jobs show unexpanded `${{ inputs.test_name }}`
+check names in the PR's check list. Read the surviving run.
 
 ## Local pre-flight (dev shell; on macOS ensure `nix` is on PATH)
 
 ```
 cd splice
 
-# 1. Daml Script tests
-direnv exec . sbt 'splice-amulet-test-daml/Test/damlTest' 'splice-dso-governance-test-daml/Test/damlTest'
+# 1. Daml Script tests — keep the log; CI fails the job on ANY DsWarning, even when sbt succeeds
+direnv exec . sbt 'splice-amulet-test-daml/Test/damlTest' 'splice-dso-governance-test-daml/Test/damlTest' | tee /tmp/damltest.log
+grep -c DsWarning /tmp/damltest.log   # must be 0
 
 # 2. Docs, per changed package (must exit 0)
 ( cd daml/splice-amulet && direnv exec . dpm docs $(find daml -name '*.daml') \
