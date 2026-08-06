@@ -327,6 +327,8 @@ per-synchronizer (a `splice-amulet` schema change).
   `listSequencerTrafficControlState`, summing `extraTrafficConsumed`,
   `SequencerAdminConnection.scala:368`) may be needed. Belongs to the
   differential-discounting workstream.
+- Full operator reward design: see
+  [extension-rewards.md](extension-rewards.md) (Workstream 2, Epic E10).
 
 ## 11. Data model
 
@@ -382,7 +384,8 @@ limit, the funding path has no under-provisioning reconciliation problem.
 - Operator lifecycle: how governance offboards or bounds a registered operator-run
   synchronizer (decommission, revoke), mirroring the DSO-side lifecycle states.
 - Rewards: the app-reward model for the operator (per-round reporting, the proposed
-  0.9 x burn cap), and whether it needs aggregate consumption reporting.
+  0.9 x burn cap), and whether it needs aggregate consumption reporting. The fuller
+  design is now captured in [extension-rewards.md](extension-rewards.md).
 
 ## Appendix A: broader design context
 
