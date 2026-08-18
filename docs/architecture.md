@@ -25,7 +25,7 @@ the purchased traffic on its own sequencer. See `design/extension-traffic-manage
 ## Off-ledger (planned)
 
 Reconcile trigger (`DedicatedSyncTraffic` → `SetTrafficPurchased`), operator node, validator
-auto-topup, Scan endpoints. See `planning/extending-mainnet-work-plan.md` (WS1).
+auto-topup, Scan endpoints. See `planning/phase-2.md` (P2-E5, P2-E7; legacy WS1 detail in `planning/legacy/extending-mainnet-work-plan.md`).
 
 ## Docs map
 
