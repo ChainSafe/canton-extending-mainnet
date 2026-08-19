@@ -71,3 +71,61 @@ P1→P2 migration (P2-E8.5), air-gapped proxy parking lot (P2-E8.6), two-sync Lo
   reporting, lifecycle) is ahead of this plan in Daml terms; the plan's P2-E1/E2 leaves
   describe the same shapes as production work items (hardening, FR-1 outcome, pricing
   fields). The reward-reporting half (#47's output) parks as P3-E6 input.
+
+## Filed mapping (2026-08-19)
+
+| Slug | Issue |
+|---|---|
+| P2-E1 | #64 |
+| P2-E2 | #65 |
+| P2-E3 | #66 |
+| P2-E4 | #67 |
+| P2-E5 | #68 |
+| P2-E6 | #69 |
+| P2-E7 | #70 |
+| P2-E8 | #71 |
+| P2-E9 | #72 |
+| P3-E1 | #73 |
+| P3-E2 | #74 |
+| P3-E3 | #75 |
+| P3-E4 | #76 |
+| P3-E5 | #77 |
+| P3-E6 | #78 |
+| P3-E7 | #79 |
+| P2-E1.1 | #80 |
+| P2-E1.2 | #81 |
+| P2-E1.3 | #82 |
+| P2-E1.4 | #54 (carried) |
+| P2-E1.5 | #83 |
+| P2-E2.1 | #84 |
+| P2-E2.2 | #85 |
+| P2-E2.3 | #86 |
+| P2-E2.4 | #39 (carried) |
+| P2-E2.5 | #34 (carried) |
+| P2-E3.1 | #87 |
+| P2-E3.2 | #88 |
+| P2-E3.3 | #89 |
+| P2-E3.4 | #90 |
+| P2-E4.1 | #91 |
+| P2-E4.2 | #92 |
+| P2-E4.3 | #93 |
+| P2-E5.1 | #31 (carried) |
+| P2-E5.2 | #35 (carried) |
+| P2-E5.3 | #32 (carried) |
+| P2-E5.4 | #38 (carried) |
+| P2-E5.5 | #40 (carried) |
+| P2-E6.1 | #94 |
+| P2-E6.2 | #95 |
+| P2-E6.3 | #96 |
+| P2-E7.1 | #41 (carried) |
+| P2-E7.2 | #42 (carried) |
+| P2-E7.3 | #97 |
+| P2-E8.1 | #98 |
+| P2-E8.2 | #99 |
+| P2-E8.3 | #37 (carried) |
+| P2-E8.4 | #36 (carried) |
+| P2-E8.5 | #100 |
+| P2-E8.6 | #101 |
+| P2-E9.1 | #102 |
+| P2-E9.2 | #103 |
+| P2-E9.3 | #104 |

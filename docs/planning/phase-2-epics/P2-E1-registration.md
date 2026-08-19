@@ -1,6 +1,6 @@
 # P2-E1 — On-ledger registration & governance
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #64
 
 The DSO maintains an on-ledger registry mapping a dedicated synchronizer id to its Sync
 Operator (SO) party. Registration is the authorization anchor for everything downstream:

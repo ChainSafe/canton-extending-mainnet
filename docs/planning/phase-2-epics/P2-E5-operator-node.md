@@ -1,6 +1,6 @@
 # P2-E5 — Sync Operator Node & reconciliation
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #68
 
 The operator-side runtime: a dual-homed deployment (participant on both the global and the
 dedicated synchronizer) that watches on-ledger purchases for its synchronizer and turns

@@ -1,6 +1,6 @@
 # P2-E6 — Consumption reporting (enforcement)
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #69
 >
 > **Phase label contested.** FR-27/28 carry P2 labels, but FR-28's substance (declared
 > rates/discounts/classes) is Phase 3, its P2 clause (no capacity without burn) is
