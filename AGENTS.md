@@ -43,7 +43,7 @@ engineering practice; this repo wins for project-specific facts (layout, sibling
 ## Navigation / common tasks
 
 - **Understand the feature:** `docs/design/extension-traffic-manager.md` + `docs/cip/`.
-- **What to build & who tracks it:** the issue tracker in this repo — all epics live here (T0/T1 tooling/analysis and E0–E10 implementation; the code itself lands on `canton-network/splice-multi-sync`). `docs/planning/extending-mainnet-work-plan.md` is the point-in-time snapshot that generated them.
+- **What to build & who tracks it:** the issue tracker in this repo — all epics live here (T0/T1 tooling/analysis and E0–E10 implementation; the code itself lands on `canton-network/splice-multi-sync`). `docs/planning/legacy/extending-mainnet-work-plan.md` is the point-in-time snapshot that generated the original E0–E10 issues; the canonical plan is now the phase-based tree in `docs/planning/` (see its README).
 - **Run LocalNet:** `scripts/localnet-up.sh` (uses the `splice/` submodule) → `scripts/localnet-e2e.sh`.
 - **Work on the code:** `cd splice`, work on a branch, push to the fork, then `git add splice` here to bump the pointer. **Push the submodule before the superproject.**
 - **Set up your environment:** see `docs/development.md` — clone with the submodule, the Nix/direnv dev shell, and the build/test commands.
