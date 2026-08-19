@@ -1,6 +1,6 @@
 # P2-E2 — CC-funded traffic purchase
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #65
 
 Traffic on a dedicated synchronizer is funded by burning CC on the global synchronizer via
 the existing purchase flow: `AmuletRules_BuyMemberTraffic` names the synchronizer id and

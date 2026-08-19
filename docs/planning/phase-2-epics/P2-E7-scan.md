@@ -1,6 +1,6 @@
 # P2-E7 — Scan & observability
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #70
 
 Public, funding-side visibility: registrations, fee states, per-synchronizer purchase
 aggregates, and report/burn reconciliation are readable without operating a node.

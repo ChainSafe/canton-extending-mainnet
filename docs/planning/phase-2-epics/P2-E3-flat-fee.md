@@ -1,6 +1,6 @@
 # P2-E3 — Flat platform fee
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #66
 
 Phase 2 replaces enterprise license fees with a flat, USD-denominated yearly platform fee
 per dedicated synchronizer (FR-10), pro-rated, paid in CC, purely deflationary (never

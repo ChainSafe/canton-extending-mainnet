@@ -1,6 +1,6 @@
 # P2-E4 — Per-synchronizer governance discount
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #67
 
 The single Phase-2 pricing lever (FR-13): Super Validators can vote a discount on the
 traffic price for a specific dedicated synchronizer — the governance bridge ahead of the

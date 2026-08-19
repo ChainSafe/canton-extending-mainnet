@@ -1,6 +1,6 @@
 # P2-E8 — Deployment & operations
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #71
 
 Everything an operator needs to stand up and run a dedicated synchronizer in the economy:
 scripted bootstrap, permissioned-from-day-one, Helm packaging, upgrade runbook, and the

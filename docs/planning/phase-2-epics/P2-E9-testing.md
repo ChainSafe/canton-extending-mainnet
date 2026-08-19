@@ -1,6 +1,6 @@
 # P2-E9 — Testing & acceptance
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #72
 
 The integration substrate and the milestone's proof: a two-synchronizer LocalNet, the
 end-to-end acceptance scenario that is Phase 2's exit criterion, and CI hygiene so the
