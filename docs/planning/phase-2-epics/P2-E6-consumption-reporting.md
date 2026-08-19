@@ -1,6 +1,20 @@
 # P2-E6 — Consumption reporting (enforcement)
 
 > Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+>
+> **Phase label contested.** FR-27/28 carry P2 labels, but FR-28's substance (declared
+> rates/discounts/classes) is Phase 3, its P2 clause (no capacity without burn) is
+> enforced by construction (base rate 0 + gated reconciliation), and the self-signed
+> report cannot catch a lying operator — while every data consumer of the report
+> (throughput discounts, reward bounds, FR-3 settlement) is Phase 3 or disputed.
+> The design doc's own Appendix-B timeline includes no reporting item. Raised with DA;
+> if confirmed P3, this epic merges into P3-E6's reporting foundation.
+>
+> **Component note:** the report-*submission* automation (reading the sequencer's traffic
+> states, exercising the report choice on cadence) is Sync Operator Node functionality,
+> hosted by P2-E5.2's app. The epic stays separate because its leaves span splice-amulet
+> Daml (E6.1/E6.2) and Scan (E6.3), and because the contested phase label makes a
+> severable epic cleaner to migrate wholesale if DA confirms P3.
 
 The burn side of the economy is on-ledger and public; the consumption side happens on a
 private synchronizer the SVs cannot see. FR-27 closes the loop: the SO party reports

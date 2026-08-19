@@ -76,6 +76,9 @@ order. E5 automation can start against the E2 shape as soon as the observer fiel
   settlement either way.
 - **FR-25 thread**: confirms whether any reward-eligibility *rule* work lands in P2
   (definition only) or all of it moves to P3. Currently assumed: all P3.
+- **FR-27/28 phase labels**: contested (see the P2-E6 header note) — the report's data
+  consumers are all Phase 3 or disputed, and Appendix B's timeline omits it. If DA
+  confirms P3, P2-E6 leaves this milestone and exit criterion 1 drops its report leg.
 - Upstream Splice sync cadence for the feature branch; CIP ratification timeline (public
   posting ~September).
 

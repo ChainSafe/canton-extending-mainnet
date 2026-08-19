@@ -4,9 +4,11 @@
 
 Phase 2 replaces enterprise license fees with a flat, USD-denominated yearly platform fee
 per dedicated synchronizer (FR-10), pro-rated, paid in CC, purely deflationary (never
-reward-eligible), and enforced at the buy gate. Design basis: the accepted "Flat
-Synchronizer Fee" design (Sadiq, 2026-08; Itai concurring) — `paidThrough` time purchased
-by burn, lapses billed not forgiven. Known accepted leak, tracked not solved here: an
+reward-eligible), and enforced at the buy gate. Design basis: the ["Flat
+Synchronizer Fee" design doc](https://docs.google.com/document/d/1kljSOy4ZLfKzc9vg5FmPphXZ7kMYE0y8BihwZKYMBPs)
+(Sadiq, 2026-08; direction accepted by Itai, detailed review pending — the mechanism may
+still change; update these leaves when it finalizes) — `paidThrough` time purchased by
+burn, lapses billed not forgiven. Known accepted leak, tracked not solved here: an
 operator can stockpile traffic while current, then lapse and operate on the stockpile;
 mitigations belong to Phase 3 (enforcement escalation) if needed.
 
