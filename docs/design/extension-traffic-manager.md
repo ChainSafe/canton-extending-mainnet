@@ -1,8 +1,6 @@
-<!-- Synced from the shared Google Doc "Dedicated Synchronizer Traffic Manager" on 2026-08-24.
-     Converted from the .docx export, so this is the doc's current text, not the repo's earlier
-     edit of it. The Google Doc remains the live artifact; 87 open comments are NOT captured here
-     (see the comment extract). Rendered diagram images dropped; the mermaid sources they
-     duplicate are kept. -->
+<!-- Synced from the shared Google Doc "Dedicated Synchronizer Traffic Manager" on 2026-08-24 (second export,
+     after the first pass of comment fixes). The Google Doc remains the live artifact; 44 open comments are
+     NOT captured here. Rendered diagram images dropped; the mermaid sources they duplicate are kept. -->
 
 # Dedicated Synchronizer Traffic Manager
 
@@ -47,7 +45,7 @@ The analogy is synchronizers are like ISPs: users of Canton will be able to choo
 <tr>
 <th>FR-1</th>
 <th>P2</th>
-<th>A dedicated synchronizer may be registered on Mainnet by its Synchronizer Operations (SO) party without a Super Validator vote, and the registration is publicly readable.</th>
+<th>A dedicated synchronizer is registered on Mainnet by Super Validator governance vote, which records the mapping from synchronizer id to Synchronizer Operations (SO) party. The registration is publicly readable, and may be revoked by a later vote.</th>
 <th>conflict</th>
 </tr>
 <tr>
@@ -102,7 +100,7 @@ Two cases:</p>
 
 | # | Phase | Requirement | Fulfilled by User Story |
 |----|----|----|----|
-| FR-13 | P2 | Super Validator governance may set a fixed percentage discount for a named dedicated synchronizer by configuration vote. It never applies to the Global Synchronizer, defaults to zero, and takes effect prospectively. | Missing |
+| FR-13 | P2 | Super Validator governance may set a fixed percentage discount for a named dedicated synchronizer by configuration vote. It never applies to the Global Synchronizer, defaults to zero, and takes effect prospectively. | 1.3, 2.6 |
 | FR-14 | P3 | A throughput discount multiplies price by 0.5 ^ log10(sustained TPS) — every 10× of sustained throughput halves the price — measured as a trailing average over a parametrized window, initially one week. |  |
 | FR-15 | P3 | A duration discount multiplies price by 0.5 × 0.75 ^ log2(years) for an opt-in commitment of one year or more: 50% off at one year, a further 25% off per doubling of term. |  |
 | FR-16 | P3 | Throughput discounts are calculated based on trailing activity, while duration discounts depend on a committed throughput over the specified duration. The pure throughput discount and the duration discount apply separately, with the duration discount multiplied by the current throughput discount based on recent activity history. A high burst in throughput may lead to a higher short-term throughput discount without altering the duration discount. (To remove any possible uncertainty: org-intenal transactions must not count toward throughput discounts for app-internal or composing traffic purchases). |  |
@@ -131,17 +129,17 @@ Two cases:</p>
 
 | # | Phase | Requirement | Fulfilled by User Story |
 |----|----|----|----|
-| FR-25 | P2 | Reward eligibility attaches when traffic credits are used, not when they are purchased. The flat platform fee and all org-internal traffic are excluded from reward eligibility and are purely deflationary. | Missing/move to Phase 3? |
-| FR-26 | P2 | Burn-mint recirculation and the four reward pools (DevFund, SVs, validators and apps) are unchanged. An operator cannot override the reward split on its own synchronizer, and no pool is created for or reallocated to dedicated synchronizer operators. | Missing/move to Phase 3? |
-| FR-27 | P2 | A dedicated synchronizer reports total transactions, average transactions per second, and total traffic consumed to the Super Validators of the Global Synchronizer over a parametrized timeframe. This report is signed by the dedicated SO party and reconcilable against settled burn. | Missing/move to Phase 3? |
-| FR-28 | P2 | A dedicated synchronizer operator cannot obtain sequencing capacity without the corresponding burn, or alter the reward rates, discounts or transaction type (org-internal, app-internal, composed) that are declared by the synchronizer operator and verified by the Global Synchronizer Super Validators, without patching the software. Where a SO circumvents the code, the on-chain record makes the discrepancy detectable. | Missing/move to Phase 3? |
+| FR-25 | P3 | Reward eligibility attaches when traffic credits are used, not when they are purchased. The flat platform fee and all org-internal traffic are excluded from reward eligibility and are purely deflationary. This describes app rewards and the end state for validator rewards. Validator rewards today are minted at purchase time by the existing buy flow; a separate CIP in flight moves them to traffic-based issuance, at which point they follow this rule too. |  |
+| FR-26 | P3 | Burn-mint recirculation and the four reward pools (DevFund, SVs, validators and apps) are unchanged. An operator cannot override the reward split on its own synchronizer, and no pool is created for or reallocated to dedicated synchronizer operators. |  |
+| FR-27 | P3 | A dedicated synchronizer reports total transactions, average transactions per second, and total traffic consumed to the Super Validators of the Global Synchronizer over a parametrized timeframe. This report is signed by the dedicated SO party and reconcilable against settled burn. |  |
+| FR-28 | P3 | A dedicated synchronizer operator cannot obtain sequencing capacity without the corresponding burn, or alter the reward rates, discounts or transaction type (org-internal, app-internal, composed) that are declared by the synchronizer operator and verified by the Global Synchronizer Super Validators, without patching the software. Where a SO circumvents the code, the on-chain record makes the discrepancy detectable. |  |
 
 ### Governance and compatibility
 
 | # | Phase | Requirement | Fulfilled by User Story |
 |----|----|----|----|
 | FR-29 | P2 | Every rate, discount curve constant, stake percentage, threshold, cap, window and cadence in this model is an on-chain governance parameter amendable by Super Validator configuration vote, effective prospectively, with no bilateral negotiation. | Missing |
-| FR-30 | P2 | Global Synchronizer users see no change to price, reward mechanics or purchase flow; all changes for dedicated synchronizers are additive, and existing deployments migrate on their own schedule rather than by a forced date. | Missing |
+| FR-30 | P2 | Global Synchronizer users see no change to price, reward mechanics or purchase flow; all changes for dedicated synchronizers are additive, and existing deployments migrate on their own schedule rather than by a forced date. | Covered by negation |
 
 ## 3. Background: the traffic model today
 
@@ -375,7 +373,7 @@ Throughput is reported in bytes (we use TPS as a high-level description to make 
 
 DSO automation uses the reported throughput in the last X ticks to adjust the throughput discount.
 
-DSO automation checks that the total amount purchased for a synchronizer is <= total reported. So a malicious synchronizer operator can report the burn too early or delay it but not change the total burn which is acceptable.
+DSO automation checks that the total amount purchased for a synchronizer is >= total reported. So a malicious synchronizer operator can report the burn too early or delay it but not change the total burn which is acceptable.
 
 ###### Duration
 
@@ -665,7 +663,7 @@ This section lays out the explicit scenarios that we expect to work in Phase 2 (
 
 ### Dedicated Sync Registration
 
-1.  Off-ledger: an organization interested in operating a dedicated synchronizer contacts some SV, indicates their interest, and provides a syncId (TBD: just any string?) and their (the SO) party ID
+1.  Off-ledger: an organization interested in operating a dedicated synchronizer contacts some SV, indicates their interest, provides a syncId and their (the SO) party ID. A syncId is name::namespace, where the namespace is a key fingerprint: Splice derives it by hashing the owner set, so it is derived from the operator's participant namespace rather than equal to it. The id is constructed in code and handed to bootstrap rather than returned by it, so once the participant exists and a name is chosen the syncId is fixed and can go into the vote before the synchronizer is stood up.
 
 2.  Off-ledger: the SVs (via the tokenomics committee ?) agree on the discount for this synchronizer
 
