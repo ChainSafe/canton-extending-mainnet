@@ -49,6 +49,59 @@ daml test                        # run the acceptance tests (currently 14 script
 - Grounded in real Splice/Canton source: `computeSynchronizerFees` (AmuletRules.daml; round `trafficPrice` takes precedence over config `extraTrafficPrice`), `splitAndBurn` mints a `ValidatorRewardCoupon`, `SynchronizerFeesConfig` in DecentralizedSynchronizer.daml.
 - Docs style (carried from canton-cip-docs): avoid em/long dashes; direct language.
 
+## Splice contribution policy (check before every fork PR)
+
+The fork carries upstream's policy files and they bind our work. **Read them, do not work from this
+summary:** `splice/CONTRIBUTING.md`, `splice/AI_POLICY.md`, `splice/TESTING.md`,
+`splice/MAINTAINERS.md`. For the mechanical CI gates (setup gates, terminology, headers, artifact
+regeneration, SCU, flakes, local pre-flight) see [`docs/splice-ci.md`](docs/splice-ci.md), which is
+authoritative and not repeated here.
+
+**AI policy (`AI_POLICY.md`), the one that binds us most.** We are fully accountable for every line
+submitted under our name, must understand it, and must be able to say why each change is there; "the
+AI wrote it" is not an answer. Self-review aggressively before asking for review. Do not open a PR we
+would not have opened without AI. Issues and PRs that read as unreviewed AI output (overlong and
+padded, referencing things that do not exist, plausible-sounding but wrong, bot-style prose) **may be
+closed without discussion**, and repeat offences can get an account blocked. The same rule applies to
+review comments we leave on other people's PRs: do not post AI-generated feedback we have not read
+carefully and cannot defend. A PR opened by a named human keeps the single-approval rule; only
+bot-opened or fully autonomous PRs need two human reviewers. There is no duty to label AI assistance,
+but never deny it if asked.
+
+**Daml changes need a maintainer conversation first.** Adopting them on a prod system takes an SV
+supermajority vote, so `CONTRIBUTING.md` asks contributors to reach out to the Splice Maintainers
+before proposing the change, not after opening the PR.
+
+**Backwards compatibility.** All Daml changes must be backwards compatible. Variant and enum
+constructors may now be added directly; the `ExtFoo` constructors are historical workarounds and can
+be ignored. The live hazard is different: **only add nullary constructors to a type whose
+constructors are all nullary**, or a Daml-LF enum silently becomes a variant and the codegen changes
+shape.
+
+**Testing.** "Every contribution must be tested in an automated test." A LocalNet profile or a manual
+run does not satisfy this.
+
+**Naming and types**, from `CONTRIBUTING.md`, worth knowing before writing rather than in review:
+use `amount`, never `quantity` or `number`; use `sender`/`receiver`, never `payer`/`payee`; use
+`listXXX`/`acceptXXX`/`rejectXXX`/`withdrawXXX` for proposal management; config flags are `enableXXX`,
+never `disableXXX`; prefer Scala types and convert to Java as late as possible; Daml `Numeric` is
+`scala.math.BigDecimal` in Scala and `string` in protobuf.
+
+**Scan update-history types are BFT-consensus types.** Any schema change to one breaks JSON equality
+across SVs running different versions. Adding an `Option[_]` is the trap, because circe emits
+`"field": null` where old code omits the key: use `Option[OmitNullString]` with the `omitWhenNone`
+helper, or gate the change behind a threshold record time. This applies to the OpenAPI types, not to
+Daml payloads, which are stored structurally by `ProtobufCodec.serializeValue` and so cannot diverge
+between SVs.
+
+**Where our fork knowingly diverges.** These are the feature fork's own choices, not defects, but
+they matter when the fork is upstreamed and they should not be re-argued in every review.
+`CONTRIBUTING.md` documents squash-and-merge with CI tags stripped and noise like "address review
+comments" removed, while the fork uses merge commits and keeps `[ci]` in history. Upstream PR titles
+are imperative with no conventional-commit prefix plus a trailing `(#N)`, e.g. "Add new ACS snapshot
+endpoints using opaque pagination tokens (#6995)", while the fork uses `feat:`/`fix:`. Branches are
+documented as `<yourname>/<descriptive>` and the fork uses `feat/<topic>`.
+
 ## Git Commit Rules
 
 Never include "Co-authored-by" or any reference to Claude/Anthropic in commit messages or pull requests.
