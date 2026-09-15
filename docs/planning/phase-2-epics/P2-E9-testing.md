@@ -52,3 +52,16 @@ quarantine process documented.
 with no infra-red requiring manual rerun.
 
 **Depends on.** P2-E9.1, P2-E9.2.
+
+## P2-E9.4 — Upgrade-compatibility gate for `daml/` changes
+
+**Context.** No automated upgrade-compatibility check runs on the fork, and none has ever
+run against the dedicated-synchronizer work: no package declares an `upgrades:` key, so
+`daml build` performs no upgrade typecheck, and the real mechanism is a manual workflow
+input. The fork has already shipped one package-identity defect (P2-E8.8).
+
+**Deliverable.** Any PR touching `daml/` runs the compatibility check before merge; a
+package-version bump is required whenever a shipped package changes; and the rule that an
+`Optional` field becomes irreversible once populated is written where a Daml author sees it.
+
+**Blocking.** Wanted before the 0.10.0 Daml cut. (Filed as #113.)

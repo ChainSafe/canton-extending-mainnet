@@ -1,5 +1,9 @@
 # P2-E6 — Consumption reporting (enforcement)
 
+> **MOVED TO PHASE 3 (2026-08-24).** FR-25 to FR-28 were relabelled P3 ("all rewards are
+> P3"), which is the condition this epic's phase-label note named. Tracker #69 and its
+> leaves now sit under the Phase 3 milestone.
+
 > Milestone: [Phase 2](../phase-2.md) · GitHub: #69
 >
 > **Phase label contested.** FR-27/28 carry P2 labels, but FR-28's substance (declared

@@ -59,3 +59,19 @@ composition; property: factor 1.0 reproduces current gsync pricing bit-for-bit.
 **Depends on.** P2-E4.2.
 
 **Phase-3 foundation.** Tier and curve factors compose here (FR-11, FR-14..FR-22).
+
+## P2-E4.4 — Enforce FR-13: no discount on a required synchronizer
+
+**Context.** FR-13 says the discount never applies to the Global Synchronizer, and nothing
+enforces it: `validateSynchronizerAuthorization` accepts a disclosed registration whenever
+the ids match, without checking the id is not also in `requiredSynchronizers`. A
+registration voted for a required synchronizer id would authorize the buy and, once
+P2-E4.2 lands, discount it. Narrow (needs a governance mistake, and the registered branch
+requires `migrationId == 0`) but P2-E4.2 is what makes it material.
+
+**Deliverable.** Reject a buy that supplies a registration for a synchronizer id in
+`requiredSynchronizers`, with a `FailureStatus` matching its siblings.
+
+**Acceptance.** Daml Script: such a buy fails; a normal registered buy is unaffected.
+
+**Depends on.** P2-E4.2. (Filed as #119.)

@@ -72,60 +72,79 @@ P1→P2 migration (P2-E8.5), air-gapped proxy parking lot (P2-E8.6), two-sync Lo
   describe the same shapes as production work items (hardening, FR-1 outcome, pricing
   fields). The reward-reporting half (#47's output) parks as P3-E6 input.
 
-## Filed mapping (2026-08-19)
+## Filed mapping (regenerated 2026-09-15)
 
-| Slug | Issue |
-|---|---|
-| P2-E1 | #64 |
-| P2-E2 | #65 |
-| P2-E3 | #66 |
-| P2-E4 | #67 |
-| P2-E5 | #68 |
-| P2-E6 | #69 |
-| P2-E7 | #70 |
-| P2-E8 | #71 |
-| P2-E9 | #72 |
-| P3-E1 | #73 |
-| P3-E2 | #74 |
-| P3-E3 | #75 |
-| P3-E4 | #76 |
-| P3-E5 | #77 |
-| P3-E6 | #78 |
-| P3-E7 | #79 |
-| P2-E1.1 | #80 |
-| P2-E1.2 | #81 |
-| P2-E1.3 | #82 |
-| P2-E1.4 | #54 (carried) |
-| P2-E1.5 | #83 |
-| P2-E2.1 | #84 |
-| P2-E2.2 | #85 |
-| P2-E2.3 | #86 |
-| P2-E2.4 | #39 (carried) |
-| P2-E2.5 | #34 (carried) |
-| P2-E3.1 | #87 |
-| P2-E3.2 | #88 |
-| P2-E3.3 | #89 |
-| P2-E3.4 | #90 |
-| P2-E4.1 | #91 |
-| P2-E4.2 | #92 |
-| P2-E4.3 | #93 |
-| P2-E5.1 | #31 (carried) |
-| P2-E5.2 | #35 (carried) |
-| P2-E5.3 | #32 (carried) |
-| P2-E5.4 | #38 (carried) |
-| P2-E5.5 | #40 (carried) |
-| P2-E6.1 | #94 |
-| P2-E6.2 | #95 |
-| P2-E6.3 | #96 |
-| P2-E7.1 | #41 (carried) |
-| P2-E7.2 | #42 (carried) |
-| P2-E7.3 | #97 |
-| P2-E8.1 | #98 |
-| P2-E8.2 | #99 |
-| P2-E8.3 | #37 (carried) |
-| P2-E8.4 | #36 (carried) |
-| P2-E8.5 | #100 |
-| P2-E8.6 | #101 |
-| P2-E9.1 | #102 |
-| P2-E9.2 | #103 |
-| P2-E9.3 | #104 |
+Generated from the live tracker. **GitHub is canonical for the leaf inventory**: the epic
+files describe the work, but leaves are added, split and rescoped there first. States:
+`done` = closed completed, `descoped` = closed not planned (the flat platform fee and
+consumption reporting both left Phase 2; see the epic files).
+
+| Slug | Issue | State |
+|---|---|---|
+| P2-E1 | #64 | open |
+| P2-E1.1 | #80 | done |
+| P2-E1.2 | #81 | done |
+| P2-E1.3 | #82 | done |
+| P2-E1.4 | #54 | open |
+| P2-E1.5 | #83 | done |
+| P2-E2 | #65 | open |
+| P2-E2.1 | #84 | done |
+| P2-E2.2 | #85 | done |
+| P2-E2.3 | #86 | done |
+| P2-E2.4 | #39 | done |
+| P2-E2.5 | #34 | open |
+| P2-E2.6 | #112 | open |
+| P2-E3 | #66 | descoped |
+| P2-E3.1 | #87 | descoped |
+| P2-E3.2 | #88 | descoped |
+| P2-E3.3 | #89 | descoped |
+| P2-E3.4 | #90 | descoped |
+| P2-E4 | #67 | open |
+| P2-E4.1 | #91 | done |
+| P2-E4.2 | #92 | open |
+| P2-E4.3 | #93 | open |
+| P2-E4.4 | #119 | open |
+| P2-E5 | #68 | open |
+| P2-E5.1 | #31 | done |
+| P2-E5.2 | #35 | done |
+| P2-E5.3 | #32 | done |
+| P2-E5.4 | #38 | done |
+| P2-E5.5 | #40 | done |
+| P2-E5.6 | #110 | done |
+| P2-E5.7 | #115 | open |
+| P2-E5.8 | #116 | open |
+| P2-E6 | #69 | open |
+| P2-E6.1 | #94 | open |
+| P2-E6.2 | #95 | open |
+| P2-E6.3 | #96 | open |
+| P2-E7 | #70 | open |
+| P2-E7.1 | #41 | done |
+| P2-E7.2 | #42 | done |
+| P2-E7.3 | #97 | open |
+| P2-E7.4 | #108 | open |
+| P2-E7.5 | #111 | open |
+| P2-E8 | #71 | open |
+| P2-E8.1 | #98 | open |
+| P2-E8.2 | #99 | open |
+| P2-E8.3 | #37 | open |
+| P2-E8.4 | #36 | open |
+| P2-E8.5 | #100 | open |
+| P2-E8.6 | #101 | open |
+| P2-E8.7 | #106 | open |
+| P2-E8.8 | #114 | open |
+| P2-E9 | #72 | open |
+| P2-E9.1 | #102 | open |
+| P2-E9.2 | #103 | open |
+| P2-E9.3 | #104 | open |
+| P2-E9.4 | #113 | open |
+| P3-E1 | #73 | open |
+| P3-E2 | #74 | open |
+| P3-E3 | #75 | open |
+| P3-E4 | #76 | open |
+| P3-E5 | #77 | open |
+| P3-E6 | #78 | open |
+| P3-E7 | #79 | open |
+
+Untagged issues outside the slug scheme: #107 (Phase 2 tracker), #109 (sync-id parsing
+follow-ups in the stores), #117 (Scan ingestion throws on an unparseable synchronizer id),
+#2 (cross-cutting coordination), #5/#6 (closed).
