@@ -1,6 +1,11 @@
 # P2-E3 — Flat platform fee
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> **DESCOPED from Phase 2 (2026-08-25).** Customer pushback on the $250k base fee; the
+> MVP ships with no flat fee and no staking. Kept for the analysis if the fee returns in a
+> later phase — tracker #66 and its leaves are closed as not planned, reopen rather than
+> re-file.
+
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #66
 
 Phase 2 replaces enterprise license fees with a flat, USD-denominated yearly platform fee
 per dedicated synchronizer (FR-10), pro-rated, paid in CC, purely deflationary (never

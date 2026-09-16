@@ -17,6 +17,9 @@ WS1/WS2 era; `reconciliation.md` maps its issues onto this plan.
 
 ## Conventions
 
+- **GitHub is canonical for the leaf inventory.** These files describe the work and were the
+  original cut; leaves are added, split and rescoped on the tracker first. `reconciliation.md`
+  carries the regenerated slug → issue mapping.
 - IDs are stable slugs: epic `P2-E3`, leaf `P2-E3.2`. When filed on GitHub, the mapping
   slug → issue number is recorded in the epic file header and the leaf gets the slug in
   its title, e.g. `[P2-E3.2] Buy-gate fee enforcement`.
@@ -26,5 +29,5 @@ WS1/WS2 era; `reconciliation.md` maps its issues onto this plan.
   (where the design deliberately leaves a socket for Phase 3), Refs (FR rows from the
   design doc's Functional Requirements table; design-doc sections; CIP).
 - Phase labels follow the settled scope (2026-08-17): Phase 2 = burn CC at gsync rates +
-  flat platform fee + governance discount + consumption reporting. App rewards,
+  governance discount. App rewards, the flat platform fee, consumption reporting,
   pricing tiers, discount curves, staking, and the org cap are Phase 3.

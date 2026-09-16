@@ -1,6 +1,6 @@
 # P2-E8 — Deployment & operations
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #71
 
 Everything an operator needs to stand up and run a dedicated synchronizer in the economy:
 scripted bootstrap, permissioned-from-day-one, Helm packaging, upgrade runbook, and the
@@ -98,3 +98,32 @@ verified offline.
 **Acceptance.** Phase confirmed with DA; design note reviewed.
 
 **Depends on.** P2-E3.1, P2-E6.1 (data sources).
+
+## P2-E8.7 — Multi-node dedicated synchronizer topology (fault tolerance)
+
+**Context.** The MVP is designed as a single sequencer plus mediator with BFT out of scope,
+but the MVP is meant to be production-grade and a single node gives no fault tolerance.
+Raised on the Appendix C registration story; a 4-node synchronizer was confirmed as
+tractable and asked to be in the plan. Scope arriving after the original working-back, and
+not in any estimate.
+
+**Open before scoping.** Whether "4-node" means four sequencer/mediator pairs under one
+operator or a BFT operator set — the trust model and the reconciliation work differ.
+
+**Deliverable.** A supported multi-node topology: documented layout, bootstrap that stands
+it up, and reconciliation that grants across it.
+
+**Depends on.** P2-E8.1. (Filed as #106.)
+
+## P2-E8.8 — Reconcile Daml package versions with upstream
+
+**Context.** The fork and upstream both mint the same Daml package versions with different
+content, so a participant that vetted one can never accept the other. Verified across the
+lockfile: 19 colliding versions, six of them deployed packages. It recurred immediately
+after being fixed once, because nothing reconciles the two sides at an upstream sync.
+
+**Deliverable.** No deployed package version on the fork shares a version string with a
+different hash upstream; the upstream-sync procedure runs the version-bump task before the
+release ref advances; a check that would have caught it, or explicit coverage by P2-E9.4.
+
+**Blocking.** Must be resolved before the 0.10.0 Daml release cut. (Filed as #114.)

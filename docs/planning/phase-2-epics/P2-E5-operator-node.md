@@ -1,6 +1,6 @@
 # P2-E5 — Sync Operator Node & reconciliation
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #68
 
 The operator-side runtime: a dual-homed deployment (participant on both the global and the
 dedicated synchronizer) that watches on-ledger purchases for its synchronizer and turns
@@ -96,3 +96,54 @@ per-sync top-up state; fee-lapse behavior defined (skip + warn, do not crash-loo
 path; gsync top-up unchanged; lapsed-fee sync → skip with warning, resumes when current.
 
 **Depends on.** P2-E2.4, P2-E3.2.
+
+## P2-E5.6 — Per-synchronizer validator top-up configuration
+
+**Context.** There was nowhere to say "top up dedicated synchronizer X at N bytes/sec":
+extra-synchronizer config carried only `(alias, url)`, while the config holding
+`buyExtraTraffic` was singular and global-synchronizer shaped. Without it P2-E5.5's
+fan-out had no input.
+
+**Deliverable.** `buyExtraTraffic` on each extra-synchronizer entry, reusing the existing
+type, plus a derived `topupTargets` accessor (global first, zero targets omitted). The
+global synchronizer stays a distinguished field rather than becoming a map entry, because
+several call sites rely on it being present and would turn into fallible lookups.
+
+**Acceptance.** An extra synchronizer carries its own buy settings; existing entries parse
+unchanged; `grpc-deadline` on an extra entry is rejected at load; Helm chart and schema
+expose the key.
+
+**Depends on.** None; consumed by P2-E5.5. (Filed as #110, merged in fork PR #28.)
+
+## P2-E5.7 — Store partition generation for the operator app
+
+**Context.** `SyncOperatorApp` constructs its store with a hardcoded partition id of 0
+rather than the resolved network value. The reasoning holds for a dedicated synchronizer
+(LSU, never a hard migration) and the ingestion filter is immune to the migration-id
+mechanism because it pins `payload.migrationId == 0` directly — but the store reads a
+*global-synchronizer* ledger whose generation can advance independently, and nothing
+exercises that.
+
+**Deliverable.** A store test at a non-zero network generation, plus a recorded decision on
+whether the partition tracks the global synchronizer's generation or stays pinned, and
+what happens to ingested offsets when that synchronizer hard-migrates.
+
+**Acceptance.** The test exists and passes; the decision is written down.
+
+**Depends on.** P2-E5.2. (Filed as #115.)
+
+## P2-E5.8 — Traffic bought before a member joins is never granted
+
+**Context.** The reconcile trigger fires once per `MemberTraffic` contract. If the member
+has no traffic state on the dedicated sequencer yet — which is the case until its trust
+certificate has been sequenced there — the trigger logs and marks the contract done.
+Nothing revisits it, so that purchase is only honoured when the member buys again. Buying
+traffic before joining is a natural onboarding order, so this is a real first-run trap.
+
+**Deliverable.** Make the grant durable across a member that is not yet known: retry, or
+re-drive from purchases when a member appears.
+
+**Acceptance.** A purchase made before the member joins results in the granted balance once
+it does, covered by a test.
+
+**Depends on.** P2-E5.3. (Filed as #116.)

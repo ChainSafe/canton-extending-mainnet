@@ -1,6 +1,6 @@
 # P2-E2 — CC-funded traffic purchase
 
-> Milestone: [Phase 2](../phase-2.md) · GitHub: not filed
+> Milestone: [Phase 2](../phase-2.md) · GitHub: #65
 
 Traffic on a dedicated synchronizer is funded by burning CC on the global synchronizer via
 the existing purchase flow: `AmuletRules_BuyMemberTraffic` names the synchronizer id and
@@ -105,3 +105,18 @@ over mixed populations.
 groups only; totals preserved per group.
 
 **Depends on.** P2-E2.2.
+
+## P2-E2.6 — Wallet API and scan-proxy: buy traffic for a registered synchronizer
+
+**Context.** Path B of the buy path, split out of P2-E2.4 once that was scoped to the
+validator auto-top-up path. The end-user wallet path could not carry a registration:
+`BuyTrafficRequest.daml` hardcoded `optRegisteredSynchronizer = None`, the external wallet
+API had no registration field, and the scan proxy served no registration lookup.
+
+**Deliverable.** Registration carried through the wallet request, API and scan proxy, with
+the validator resolving the registration from Scan and disclosing it on completion.
+
+**Acceptance.** A wallet user can request traffic for a registered synchronizer; the scan
+proxy exposes the lookup the wallet frontend needs.
+
+**Depends on.** P2-E2.4. (Filed as #112; in progress as fork PR #40.)
