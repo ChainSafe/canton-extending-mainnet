@@ -211,7 +211,7 @@ package-config vote. PR runs do not do this; only the nightly and a manual dispa
   fork template carries a `versionGuard` (`ScanStore` on `RegisteredSynchronizer` is the example)
   whose threshold in `PackageVersionSupport` is the version that introduces the template. This is
   how the fork's first real run failed (2026-09-27): the guard said 0.1.23, the template lives in
-  0.1.24, fixed in fork `fda85830f`.
+  0.1.24. The fix (the constant moved to 0.1.24) goes in with the next package re-bump.
 - **Tag tests that need fork-only Daml** so the run excludes them instead of failing them. The
   annotation is `apps/common/src/test/java/.../scalatesttags/<Pkg>_<ver>.java`, a copy of its
   siblings with the version changed, named exactly as `to_tag_name` derives it (`SpliceAmulet_0_1_24`,
