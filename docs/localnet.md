@@ -32,12 +32,18 @@ idempotent - re-running `up` is safe.
 ## What you get (wiring)
 | Thing | Value |
 |---|---|
-| SV UI | http://localhost:4000 |
-| App-provider UI | http://localhost:3000 (wallet user `app-provider`) |
-| App-user UI | http://localhost:2000 |
+| SV UI | http://sv.localhost:4000 (Scan UI `http://scan.localhost:4000`, SV wallet `http://wallet.localhost:4000`, wallet user `sv`) |
+| App-provider UI | wallet http://wallet.localhost:3000 (wallet user `app-provider`), ANS http://ans.localhost:3000 |
+| App-user UI | wallet http://wallet.localhost:2000 (wallet user `app-user`), ANS http://ans.localhost:2000 |
 | JSON Ledger API v2 | app-provider `http://localhost:3975/v2`, app-user `http://localhost:2975/v2` |
 | Validator admin API | app-provider `http://localhost:3903/api/validator` |
 | Auth (unsafe dev) | HS256, secret `unsafe`, aud `https://canton.network.global`, users `ledger-api-user` / `app-provider` |
+
+The UI ports are nginx name-based virtual hosts: the `Host` header picks the app. Plain
+`http://localhost:4000` hits the default server block, which serves an empty static root and
+returns 404. `*.localhost` resolves to loopback on current macOS and Linux; if it does not on
+your machine, add `127.0.0.1 sv.localhost scan.localhost wallet.localhost ans.localhost` to
+`/etc/hosts`, or use `curl --resolve sv.localhost:4000:127.0.0.1 http://sv.localhost:4000/`.
 
 Discovered ids are written to `.localnet/discovered.env` (gitignored):
 `GLOBAL_SYNC_ID`, `DEDICATED_SYNC_ID` (the `app-synchronizer`), `DSO_PARTY` (`DSO::<namespace>`).
