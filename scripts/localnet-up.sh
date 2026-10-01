@@ -81,10 +81,10 @@ echo "--- $DISCOVERED_ENV ---"; cat "$DISCOVERED_ENV"
 cat <<EOF
 
 >> LocalNet is up. Wiring:
-   SV UI            http://sv.localhost:4000   (Scan: http://scan.localhost:4000, SV wallet: http://wallet.localhost:4000)
-   App-provider UI  http://wallet.localhost:3000   (wallet user: $WALLET_USER; ANS: http://ans.localhost:3000)
-   App-user UI      http://wallet.localhost:2000   (ANS: http://ans.localhost:2000)
-   (nginx routes by Host header; plain http://localhost:4000 is a 404)
+   SV UI            http://sv.localhost:${SV_UI_PORT:-4000}   (Scan: http://scan.localhost:${SV_UI_PORT:-4000}, SV wallet: http://wallet.localhost:${SV_UI_PORT:-4000}, wallet user: sv)
+   App-provider UI  http://wallet.localhost:${APP_PROVIDER_UI_PORT:-3000}   (wallet user: $WALLET_USER; ANS: http://ans.localhost:${APP_PROVIDER_UI_PORT:-3000})
+   App-user UI      http://wallet.localhost:${APP_USER_UI_PORT:-2000}   (wallet user: app-user; ANS: http://ans.localhost:${APP_USER_UI_PORT:-2000})
+   (nginx routes by Host header; plain http://localhost:${SV_UI_PORT:-4000} is a 404)
    JSON Ledger API  app-provider http://localhost:${APP_PROVIDER_JSON}/v2   app-user http://localhost:${APP_USER_JSON}/v2
    Validator admin  app-provider http://localhost:${APP_PROVIDER_VALIDATOR}/api/validator
    Discovered ids   $DISCOVERED_ENV
