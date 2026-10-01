@@ -43,9 +43,18 @@ and push to the remote that is `canton-network/splice-multi-sync` (below we call
    jobs "pass". Any new head (a merge, an amend, or a squash commit) needs it too.
 2. **DCO sign-off** on every commit: `git commit --signoff` (and `git merge --signoff`). Must match
    the author.
-3. **Release-line mirror (one-time per release).** The fork must contain upstream
-   `release-line-<version>` (e.g. `release-line-0.6.11`) or CI's container setup fails ("Fetch
-   release line ... failed"). Push it from upstream. (Done for 0.6.11.)
+3. **Release-line mirror (once per upstream release).** The fork must contain upstream
+   `release-line-<version>` (e.g. `release-line-0.8.1`) or CI's container setup fails ("Fetch
+   release line ... failed"). CI fetches exactly one line, `release-line-${LATEST_RELEASE}`
+   (`common_setup.sh`), so that one is the hard requirement; mirror the rest too, it is one
+   command and the compat section explains why the version matters:
+
+   ```
+   git fetch upstream 'refs/heads/release-line-*:refs/heads/release-line-*'
+   git push origin 'refs/heads/release-line-*'
+   ```
+
+   Part of every upstream sync. (Done through 0.8.4 on 2026-09-28.)
 
 ## Daml/Scala source rules (pass `daml build`, fail CI)
 
@@ -143,6 +152,84 @@ regen.
   reorder/remove constructors or change field order of a released serializable record. Appending an
   `Optional` field to a released record, or to a choice's parameters, is upgrade-legal as long as it
   goes last (`MemberTraffic.operator` and `optRegisteredSynchronizer` are the live examples).
+- **A new `Optional` stays `None` until the package-config vote has passed.** Apps upgrade before
+  the DSO votes the new package config, and in that window every submission is downgraded to the
+  version the network vets. `None` downgrades; `Some` is rejected at submission. So app code may
+  only put `Some` in a new field once the feature it belongs to can exist on the network, which
+  is what `optRegisteredSynchronizer` does: it is `Some` only for a registered synchronizer, and a
+  registration can only be created once the new package is vetted.
+
+## Daml compatibility run (the upgrade check)
+
+Upstream's `daml_compat_test.yml` runs nightly on `main`: it reads MainNet's live version from
+`https://docs.global.canton.network.sync.global/info` (`.sv.version`) and calls `build.yml` with
+`daml_base_version=<that>` and `protocol_version=35`. Every test job then bootstraps the network
+on that release's package config (`scripts/initial-package-config.py` reads
+`origin/release-line-<ver>:daml/dars.lock`, exports it as `INITIAL_PACKAGE_VERSIONS`) and runs
+HEAD's apps against it. Vetting follows that config, so a template that exists only on HEAD is not
+uploaded. **What it proves: HEAD's apps work on a network still running the previous release's
+packages**, which is where every SV and validator sits between upgrading its apps and the
+package-config vote. PR runs do not do this; only the nightly and a manual dispatch do.
+
+- **A `daml/` PR, or any change to a version guard, is dispatched against its SHA before merge** and
+  the green run linked in the PR body as the `Verified:` line:
+
+  ```
+  gh workflow run build.yml --repo canton-network/splice-multi-sync --ref main \
+    -f commit_sha=<sha> -f daml_base_version=$(cat LATEST_RELEASE) -f protocol_version=35
+  ```
+
+  The base is the fork's `LATEST_RELEASE`, not MainNet's version: CI only fetches that one
+  release line, and the script silently runs with an empty base for any other (below). Today
+  they coincide at 0.8.1; after an upstream sync `LATEST_RELEASE` runs ahead of MainNet, and its
+  release line still carries the packages MainNet vets, so the check is the same.
+  `--repo` matters: with `upstream` as a remote, `gh` defaults to `canton-network/splice` and the
+  dispatch 403s. `--ref main` only picks the copy of `build.yml`; `commit_sha` is what gets tested.
+  Dispatched runs skip the `[ci]` gate (it only fires on `pull_request`).
+- **Real or vacuous, read the "Set Daml package versions" step** of any test shard (the REST log
+  endpoint works while the run is in progress: `gh api --allow-escape-sequences
+  repos/<repo>/actions/jobs/<id>/logs`). Real: `Initial package config {"splice-amulet": "0.1.23",
+  ...}` with the base's versions, and a `ScalaTest tags: -l ...` line naming every version HEAD has
+  and the base lacks. Vacuous: `fatal: invalid object name 'refs/remotes/origin/release-line-X'`
+  followed by a green job; the script prints and continues, every package falls back to HEAD's
+  version, and the run proves nothing. Cause: `common_setup.sh` fetches only
+  `release-line-${LATEST_RELEASE}`, and the script asks for whatever version it was given. The
+  fix on our side is the `LATEST_RELEASE` rule above, not the script (upstream's). Upstream's own
+  nightly has exactly this problem whenever `LATEST_RELEASE` runs ahead of MainNet (2026-09-25 and
+  2026-09-28 both print `Initial package config {}`), so a green upstream nightly says nothing
+  about compatibility either.
+- **Known red under a real base**: `UnhideAndExpireRewardCouponV2TimeBasedIntegrationTest`
+  (upstream's) unvets HEAD's latest amulet to force a hidden coupon, but the rewards trigger checks
+  vetting against the active version in the package config, so on any base below HEAD the coupon
+  is not hidden and the test fails at its first assertion. Upstream never sees it (above). Read
+  past it; do not patch the file, it is upstream's.
+- **The fingerprint of an unguarded HEAD-only template** is `NOT_FOUND:
+  NO_TEMPLATES_FOR_PACKAGE_NAME_AND_QUALIFIED_NAME: [(splice-amulet, ...:RegisteredSynchronizer)]`
+  hundreds of times in a Canton log, then `Timeout while waiting for initialization of sv1Scan` and
+  every app stuck at "Running setup". A store filter named a template the participant has not
+  uploaded, the ledger API refused the stream, and the store retried forever. Every filter on a
+  fork template carries a `versionGuard` (`ScanStore` on `RegisteredSynchronizer` is the example)
+  whose threshold in `PackageVersionSupport` is the version that introduces the template. This is
+  how the fork's first real run failed (2026-09-27): the guard said 0.1.23, the template lives in
+  0.1.24. The fix (the constant moved to 0.1.24) goes in with the next package re-bump.
+- **Tag tests that need fork-only Daml** so the run excludes them instead of failing them. The
+  annotation is `apps/common/src/test/java/.../scalatesttags/<Pkg>_<ver>.java`, a copy of its
+  siblings with the version changed, named exactly as `to_tag_name` derives it (`SpliceAmulet_0_1_24`,
+  `SpliceDsoGovernance_0_1_30`); suite-level on the class after the scaladoc, one per newer package
+  the suite needs, governance before amulet as in the upstream two-tag suites; case-level via a
+  `Tag` object in `ScalaTestTags.scala` only when a single case needs it. Tag the version that
+  introduces the feature, not every package that got bumped alongside it. Do not tag a suite that
+  runs on a compose network (`LocalNet*`): those boot from HEAD images and never see the base config.
+- **The bump moves three things, and `lint` only checks one.** `damlDarsLockFileCheck` (in `lint`,
+  every PR) fails a shipped package whose hash changed without a version bump, against
+  `LATEST_RELEASE`. It cannot see the other two: every `versionGuard` threshold and every
+  `scalatesttags` annotation naming the old version. After `damlBumpPackageVersions`, grep
+  `DarResources.<pkg>_<old>` under `apps/*/src/main` and `scalatesttags.<Pkg>_<old>` under
+  `apps/*/src/test` and move each. Pending case: `upstream/main` already carries its own
+  `splice-amulet 0.1.24` and `splice-dso-governance 0.1.30` with different hashes and no
+  `RegisteredSynchronizer`, so the next upstream sync re-bumps ours, and
+  `supportsDedicatedSynchronizers` plus the two tags on `SyncOperatorTrafficIntegrationTest` move
+  with it. Missing that reproduces the 2026-09-27 failure exactly.
 
 ## Required jobs + infra flakes
 
