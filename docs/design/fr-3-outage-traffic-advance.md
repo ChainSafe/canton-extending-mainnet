@@ -28,7 +28,7 @@ Canton does not support negative traffic balances: a submission is refused when 
 
 During an outage, the operator sets an allowance in the sync operator app's local config, following the runbook. While it is set, each member may run up to that many bytes past what has been bought for it. Once the global synchronizer is back, the operator removes it, again following the runbook, and each member's limit returns to what has been bought for it. Nothing detects the outage automatically, nothing about it is on-ledger, and it needs no Daml change.
 
-**Setting it.** The operator adds the allowance, in bytes per member, to the app's config and restarts the app. On start, the app sets each member with a purchase on record to its purchased total plus the allowance. It only raises limits.
+**Setting it.** The operator adds the allowance to the app's config and restarts the app. It is a single value in bytes, applied to every member with a purchase on record. On start, the app sets each such member's limit to exactly its purchased total plus the allowance, so setting a smaller value and restarting lowers it again.
 
 **While it is set.** The global synchronizer may come back before the operator removes the allowance. Purchases that land in that time pay down the credit: the reconcile trigger only ever raises a limit to the purchased total ([`ReconcileSequencerLimitWithMemberTrafficTriggerBase.scala:151`](https://github.com/canton-network/splice-multi-sync/blob/bfb8c185186e48cd2ad1e687cc32479289ff2321/apps/common/src/main/scala/org/lfdecentralizedtrust/splice/automation/ReconcileSequencerLimitWithMemberTrafficTriggerBase.scala#L151)), which stays below the raised limit until the member has bought past the allowance.
 
