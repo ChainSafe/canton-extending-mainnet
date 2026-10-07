@@ -49,6 +49,24 @@ expansion automation; the vote-gated start-processing flow with attested purchas
 Leaves cut after the distribution-basis question (burn-weighting, phase-3.md open
 question 1) settles. Refs: FR-25, FR-26; CIP OQ-2.
 
+**Starting point.** The Daml PoC (fork PRs #8 and #12: `DedicatedSynchronizerState`,
+`ExtensionActivityReport`, `AmuletRules_StartProcessingExtensionRewardsV2` and its
+`CRARC_` vote action, the expander, issuance-rate and weight-budget fields on
+`ProcessRewardsV2`, `BatchOfWeightedBatches`) lives on the fork branch
+`phase-3/extension-reward-poc`. It was removed from the fork's `main` for the 0.10.0 Daml
+cut (#133), so none of it is released and Phase 3 is free to reshape it.
+
+**Reporting state for existing registrations.** Phase 2 registration does not create a
+reporting state. Phase 3 creates one per live `RegisteredSynchronizer` with SV automation,
+the pattern Splice uses for missing contracts: a confirmation trigger notices a live
+registration without a reporting state and confirms a DSO action whose choice creates it,
+as `TransferCommandCounterTrigger` does with `DsoRules_CreateTransferCommandCounter`. One
+mechanism covers synchronizers registered in Phase 2 and new ones, so the reporting state
+can be a new template with mandatory fields. Leaves: the reporting-state template; the
+`DsoRules` create choice and its `SRARC_` action (appended last); the confirmation
+trigger; the guard that stops the global reward automation retrying `ProcessRewardsV2`
+contracts that carry an expander (#61).
+
 ## P3-E7 — Outage settlement
 
 Implementation of FR-3's negative-balance settlement on reconnection, consuming P2-E6
