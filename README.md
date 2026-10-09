@@ -44,7 +44,7 @@ Plus the working pieces: **`splice/`** (submodule → the code), **`scripts/`** 
 | Repo | Role |
 |---|---|
 | **canton-extending-mainnet** (this) | The control center: docs, plans, harness, analysis, coordination. The issue tracker for **all epics**: **T0** (harness/dev-env), **T1** (analysis/DA), **E0–E10** (the fork's feature work). |
-| **canton-network/splice-multi-sync** (DA's fork; the `splice/` submodule) | **The code** — DA's multi-sync feature fork of `canton-network/splice` (monorepo: Daml `daml/` + `token-standard/`, Scala `apps/`, TS frontends, vendored Canton `canton/`, Helm `cluster/`). The PoC ladder lands on the long-running `feat/dedicated-sync` via stacked PRs that run DA's CI; see the fork's open PRs for what's in flight. (Originally developed on the `ChainSafe/splice` fork — now superseded by this one.) |
+| **canton-network/splice-multi-sync** (DA's fork; the `splice/` submodule) | **The code** — DA's multi-sync feature fork of `canton-network/splice` (monorepo: Daml `daml/` + `token-standard/`, Scala `apps/`, TS frontends, vendored Canton `canton/`, Helm `cluster/`). Changes land on the fork's `main` via PRs (stacked where they depend on each other) that run DA's CI; see the fork's open PRs for what's in flight. (Originally developed on the `ChainSafe/splice` fork — now superseded by this one.) |
 | **ChainSafe/canton-cip-docs** | Archived — CIP design docs merged here under `docs/cip/`. |
 
 See [`AGENTS.md`](AGENTS.md) for the full sibling list (x402 facilitator, MCP server, burn
@@ -70,8 +70,8 @@ snapshotter, platform docs, …).
 ## Status
 
 - **Done:** the first two PoC rungs are **approved and squash-merged** into the fork's
-  `feat/dedicated-sync`: governance registration (`RegisteredSynchronizer` +
-  `DsoRules_RegisterSynchronizer`) and CC-funded buy, which extends the existing
+  `feat/dedicated-sync` (since merged into the fork's `main`): governance registration
+  (`RegisteredSynchronizer` + `DsoRules_RegisterSynchronizer`) and CC-funded buy, which extends the existing
   `AmuletRules_BuyMemberTraffic` with a registered-synchronizer gate and adds an operator observer
   on `MemberTraffic`. The ladder continues with extension reward reporting (per-round activity
   commitment + budget-bounded expansion through `ProcessRewardsV2`) and registration lifecycle
