@@ -1,6 +1,6 @@
 # FR-3: Keeping a dedicated synchronizer sequencing through a global-synchronizer outage
 
-Status: Decided on 2026-10-05, to be folded into the FR-3 section of the 2026-08 Extension Traffic Manager Technical Design. This replaces the earlier proposal in this document, an SV-voted cap with automatic outage detection (canton-network/splice-multi-sync#61 and #66, both closed). Code links are pinned to canton-network/splice-multi-sync `main` at `bfb8c185`.
+Status: Decided on 2026-10-05, and updated on 2026-10-12 to follow the implementation review in canton-network/splice-multi-sync#71. To be folded into the FR-3 section of the 2026-08 Extension Traffic Manager Technical Design. This replaces the earlier proposal in this document, an SV-voted cap with automatic outage detection (canton-network/splice-multi-sync#61 and #66, both closed). Code links are pinned to canton-network/splice-multi-sync `main` at `bfb8c185`.
 
 ## Requirement
 
@@ -28,20 +28,17 @@ Canton does not support negative traffic balances: a submission is refused when 
 
 During an outage, the operator sets an allowance in the sync operator app's local config, following the runbook. While it is set, each member may run up to that many bytes past what has been bought for it. Once the global synchronizer is back, the operator removes it, again following the runbook, and each member's limit returns to what has been bought for it. Nothing detects the outage automatically, nothing about it is on-ledger, and it needs no Daml change.
 
-**Setting it.** The operator adds the allowance to the app's config and restarts the app. It is a single value in bytes, applied to every member with a purchase on record. On start, the app sets each such member's limit to exactly its purchased total plus the allowance, so setting a smaller value and restarting lowers it again.
+**Setting it.** The operator adds the allowance to the app's config and restarts the app. It is a single value in bytes, applied to every participant on the synchronizer, including any that join while it is set. The app keeps each participant's limit at exactly its purchased total, or 0 if it has none, plus the allowance, so setting a smaller value and restarting lowers the limits again.
 
-**While it is set.** The global synchronizer may come back before the operator removes the allowance. Purchases that land in that time pay down the credit: the reconcile trigger only ever raises a limit to the purchased total ([`ReconcileSequencerLimitWithMemberTrafficTriggerBase.scala:151`](https://github.com/canton-network/splice-multi-sync/blob/bfb8c185186e48cd2ad1e687cc32479289ff2321/apps/common/src/main/scala/org/lfdecentralizedtrust/splice/automation/ReconcileSequencerLimitWithMemberTrafficTriggerBase.scala#L151)), which stays below the raised limit until the member has bought past the allowance.
+**While it is set.** The global synchronizer may come back before the operator removes the allowance. A purchase that lands in that time raises the member's limit to its new purchased total plus the allowance, so every participant keeps the full allowance on top of what it has bought until the allowance is removed.
 
-**Removing it.** The operator removes the allowance and restarts the app. On start, the app sets each member's limit back to its purchased total, the aggregate of its purchases on the global synchronizer, then raises any limit a purchase ingested during the take-back left behind.
+**Removing it.** The operator removes the allowance and restarts the app. The app sets each participant's limit back to its purchased total, the aggregate of its purchases on the global synchronizer.
 
-**Settlement.** A member that used more than its prepaid remainder is below zero once the allowance is removed, and the sequencer refuses it until its purchases cover what it consumed. That is FR-3's "immediate top-up of any negative balance". The validator's top-up buys that shortfall together with a normal top-up in one purchase, with the funds check priced for both. Today it would buy one top-up per interval and leave the member blocked for several intervals. The purchase is an ordinary `AmuletRules_BuyMemberTraffic` at the registration's discount, so the network gets the burn for every byte, late.
+**Settlement.** A member that used more than its prepaid remainder is below zero once the allowance is removed, and the sequencer refuses it until its purchases cover what it consumed. That is FR-3's "immediate top-up of any negative balance". The validator's top-up buys that shortfall together with a normal top-up in one purchase, with the funds check priced for both. If the validator's wallet does not cover both, it buys the top-up alone, which still pays the shortfall down one interval at a time. Before this change, it bought one top-up per interval and left the member blocked for several intervals. The purchase is an ordinary `AmuletRules_BuyMemberTraffic` at the registration's discount, so the network gets the burn for every byte, late.
 
-**Warnings.** The app warns the operator:
-- every few minutes while the allowance is set, with the allowance, the number of members it covers and the total credit outstanding;
-- when a purchase lands while the allowance is set, since purchases can only be made while the global synchronizer is reachable, so it is time to remove the allowance;
-- after the allowance is removed, for any member whose limit does not come back to its purchased total.
+**No warnings yet.** The app logs nothing specific while the allowance is set, so removing it once the global synchronizer is back is a runbook step. Warnings can be added once operators have run it and the usage patterns are clearer.
 
-The warnings follow the config and purchase events, so outside the restarts the app does no work per member.
+**How the app keeps the limits.** On a dedicated synchronizer, the sync operator app reconciles traffic by polling. Each poll reads the traffic state of every member on its sequencer and every purchased total, and sets each participant's limit to its target wherever the two differ. Mediators keep their unlimited traffic, and sequencers are not charged traffic. Reading every member on each poll is fine for the few members of a dedicated synchronizer; the global synchronizer keeps its event-driven reconciliation.
 
 **Before the operator acts.** Until the allowance is set, members run on their prepaid remainder. Members that want to ride out the gap without being refused hold a larger remainder, as in FR-3's basic model. To keep about a day in hand, the top-up amount has to be a day's usage while the interval stays short, for example a one-hour `minTopupInterval` with `targetThroughput` at 24 times the member's real rate. The validator's wallet then needs a day's traffic in CC at each top-up, because the funds check prices the whole amount.
 
@@ -61,7 +58,7 @@ The allowance is the operator's own credit decision. It is local, not governed b
 
 ### Sizing
 
-The allowance is credit the operator extends per member, so its exposure is allowance × members. The CIP's $1 per typical global-synchronizer transaction at $60/MB works out to about 16.7 KB per transaction, which is about 60 MB, or $3,600, per hour at 1 TPS.
+The allowance is credit the operator extends per participant, so its exposure is allowance × participants, including any that join while it is set. The CIP's $1 per typical global-synchronizer transaction at $60/MB works out to about 16.7 KB per transaction, which is about 60 MB, or $3,600, per hour at 1 TPS.
 
 | Member rate | 15 min | 1 h | 4 h | 1 day |
 |---|---|---|---|---|
@@ -78,19 +75,18 @@ The last column is also what one member holds prepaid at all times under FR-3's 
 
 ## Open points
 
-1. **The grace period.** FR-3 settles "within a parametrized grace period". With a manual removal, the runbook can have the operator wait a grace period after the global synchronizer returns before removing the allowance, so active members' purchases pay down their credit first. The operator carries the credit meanwhile.
+1. **The grace period.** FR-3 settles "within a parametrized grace period". With a manual removal, the runbook can have the operator wait a grace period after the global synchronizer returns before removing the allowance, so members can buy back what they used before their limits drop. The operator carries the credit meanwhile.
 2. **Reporting.** FR-3's report of validators' balances on reconnection belongs with the Phase 3 consumption reports (M7).
 3. **If Canton adds negative balances later,** the allowance would map onto Canton's below-zero allowance, and the operator would no longer raise and lower limits.
 
 ## Implementation
 
-There is no Daml change, so it all ships in 0.10.3 on 20 November. ChainSafe/canton-extending-mainnet#129 tracks it, and new PRs will implement it:
+There is no Daml change, so it all ships in 0.10.3 on 20 November. It is implemented in canton-network/splice-multi-sync#71 and tracked by ChainSafe/canton-extending-mainnet#129:
 
 - **Sync operator app:**
   - the allowance setting;
-  - on start, the limits set to purchased total plus allowance, or back to purchased total;
-  - the three warnings.
-- **Validator top-up:** buying the shortfall plus a normal top-up in one purchase.
+  - a polling reconcile trigger that keeps each participant's limit at its purchased total, or 0, plus the allowance while it is set.
+- **Validator top-up:** buying the shortfall plus a normal top-up in one purchase, or the top-up alone if the wallet does not cover both.
 - **Operator documentation** (ChainSafe/canton-extending-mainnet#37): the runbook steps to set and remove the allowance, how operators coordinate on a synchronizer run by several organizations, and the guidance for members' prepaid runway.
 
-**Versions.** The Canton code above is the copy vendored in splice-multi-sync, at 3.5.7-SNAPSHOT, while nodes run the pinned 3.6.0 snapshot. The traffic-grant behavior this design relies on was exercised against the pinned images by the integration test in the closed canton-network/splice-multi-sync#66.
+**Versions.** The Canton code above is the copy vendored in splice-multi-sync, at 3.5.7-SNAPSHOT, while nodes run the pinned 3.6.0 snapshot. The traffic-grant behavior this design relies on is exercised against the pinned images by the integration tests in canton-network/splice-multi-sync#71.
