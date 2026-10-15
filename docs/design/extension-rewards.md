@@ -11,7 +11,7 @@ dedicated synchronizer is paid for (burn CC on the global synchronizer); this do
 the resulting activity earns rewards back to the operator and its users.
 
 It belongs to Workstream 2, Epic E10 in the
-[work plan](../planning/extending-mainnet-work-plan.md), broken down as issues #47 (Daml PoC,
+[work plan](../planning/legacy/extending-mainnet-work-plan.md), broken down as issues #47 (Daml PoC,
 implemented), #57 (SV-side automation), #58 (operator-side automation), plus #61 (trigger filter
 defect). The funding path (Workstream 1) does not depend on it.
 
