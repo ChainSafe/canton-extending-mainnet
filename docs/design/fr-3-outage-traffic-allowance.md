@@ -16,7 +16,7 @@ FR-3 (P2), from the requirements table of the 2026-08 Extension Traffic Manager 
 >   - If disconnected for more than 1 day, possibly penalties may apply (TBD)
 > - Intentional separate operation of a dedicated synchronizer for a planned period (probably Phase 3)
 
-The [grant draft](../grants/extending-mainnet-grant-draft.md)'s Milestone 5 acceptance says the same in one line: the synchronizer keeps sequencing while the Global Synchronizer is unavailable, and settles once it returns.
+The [Phase 1 grant proposal](../grants/universal-burn-phase-1-proposal.md)'s Milestone 3 acceptance says the same in one line: the synchronizer continues processing through a Global Synchronizer outage on prepaid traffic and then on the operator-set allowance, and settles any advance once the Global Synchronizer returns.
 
 ## The problem
 
@@ -76,7 +76,7 @@ The last column is also what one member holds prepaid at all times under FR-3's 
 ## Open points
 
 1. **The grace period.** FR-3 settles "within a parametrized grace period". With a manual removal, the runbook can have the operator wait a grace period after the global synchronizer returns before removing the allowance, so members can buy back what they used before their limits drop. The operator carries the credit meanwhile.
-2. **Reporting.** FR-3's report of validators' balances on reconnection belongs with the Phase 3 consumption reports (M7).
+2. **Reporting.** FR-3's report of validators' balances on reconnection belongs with the consumption reports in the [Phase 2 grant proposal](../grants/universal-burn-phase-2-proposal.md), Milestones 1 and 2.
 3. **If Canton adds negative balances later,** the allowance would map onto Canton's below-zero allowance, and the operator would no longer raise and lower limits.
 
 ## Implementation
