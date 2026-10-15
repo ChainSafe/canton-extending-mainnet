@@ -28,54 +28,20 @@ The analogy is synchronizers are like ISPs: users of Canton will be able to choo
 
 ### Synchronizer lifecycle
 
-<table>
-<colgroup>
-<col style="width: 9%" />
-<col style="width: 8%" />
-<col style="width: 69%" />
-<col style="width: 12%" />
-</colgroup>
-<thead>
-<tr>
-<th style="text-align: left;">#</th>
-<th style="text-align: left;">Phase</th>
-<th style="text-align: left;">Requirement</th>
-<th style="text-align: left;">Fulfilled by User Story</th>
-</tr>
-<tr>
-<th>FR-1</th>
-<th>P2</th>
-<th>A dedicated synchronizer is registered on Mainnet by Super Validator governance vote, which records the mapping from synchronizer id to Synchronizer Operations (SO) party. The registration is publicly readable, and may be revoked by a later vote.</th>
-<th>conflict</th>
-</tr>
-<tr>
-<th>FR-2</th>
-<th>P2</th>
-<th>A Validator may connect to the Global Synchronizer and to one or more dedicated synchronizers concurrently, with traffic on each synchronizer metered and priced under that synchronizer's own parameters.</th>
-<th>1.6, 1.7, 1.8</th>
-</tr>
-<tr>
-<th>FR-3</th>
-<th>P2</th>
-<th><p>A dedicated synchronizer continues sequencing transactions when the Global Synchronizer is unavailable; economic obligations accrue locally and settle on restoration, within a parametrized grace period. To allow this, dedicated synchronizers are allowed to accumulate negative traffic balance if the Global Synchronizer is unavailable. When reconnecting to the Global Synchronizer, the dedicated synchronizer must pay for the negative traffic balance as though it were an ongoing traffic purchase with its discounts applied.<br />
-<br />
-Two cases:</p>
-<ul>
-<li><p>Unplanned outages of the gSync and unplanned disconnections of a dedicated synchronizer</p>
-<ul>
-<li><p>Basic model: pre-purchase at least 1 day (required) based on trailing average usage</p></li>
-<li><p>Require immediate top-up of any negative balance, then repurchase 1-day balance, when reconnecting</p></li>
-<li><p>Dedicated synchronizer must report its Validators’ traffic balances upon reconnection.</p></li>
-<li><p>If disconnected for more than 1 day, possibly penalties may apply (TBD)</p></li>
-</ul></li>
-<li><p>Intentional separate operation of a dedicated synchronizer for a planned period (probably Phase 3)</p></li>
-</ul></th>
-<th>missing</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
+| # | Phase | Requirement | Fulfilled by User Story |
+|----|----|----|----|
+| FR-1 | P2 | A dedicated synchronizer is registered on Mainnet by Super Validator governance vote, which records the mapping from synchronizer id to Synchronizer Operations (SO) party. The registration is publicly readable, and may be revoked by a later vote. | conflict |
+| FR-2 | P2 | A Validator may connect to the Global Synchronizer and to one or more dedicated synchronizers concurrently, with traffic on each synchronizer metered and priced under that synchronizer's own parameters. | 1.6, 1.7, 1.8 |
+| FR-3 | P2 | A dedicated synchronizer continues sequencing transactions when the Global Synchronizer is unavailable; economic obligations accrue locally and settle on restoration, within a parametrized grace period. To allow this, dedicated synchronizers are allowed to accumulate negative traffic balance if the Global Synchronizer is unavailable. When reconnecting to the Global Synchronizer, the dedicated synchronizer must pay for the negative traffic balance as though it were an ongoing traffic purchase with its discounts applied. The two cases are listed below the table. | missing |
+
+FR-3 cases:
+
+- Unplanned outages of the gSync and unplanned disconnections of a dedicated synchronizer
+  - Basic model: pre-purchase at least 1 day (required) based on trailing average usage
+  - Require immediate top-up of any negative balance, then repurchase 1-day balance, when reconnecting
+  - Dedicated synchronizer must report its Validators’ traffic balances upon reconnection.
+  - If disconnected for more than 1 day, possibly penalties may apply (TBD)
+- Intentional separate operation of a dedicated synchronizer for a planned period (probably Phase 3)
 
 ### Traffic purchase and consumption
 
