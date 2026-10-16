@@ -65,7 +65,7 @@ mechanism covers synchronizers registered in Phase 2 and new ones, so the report
 can be a new template with mandatory fields. Leaves: the reporting-state template; the
 `DsoRules` create choice and its `SRARC_` action (appended last); the confirmation
 trigger; the guard that stops the global reward automation retrying `ProcessRewardsV2`
-contracts that carry an expander (#61).
+contracts that carry an expander (#78).
 
 ## P3-E7 — Outage settlement
 
