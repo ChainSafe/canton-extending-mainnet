@@ -21,7 +21,7 @@ engineering practice; this repo wins for project-specific facts (layout, sibling
 
 | Project | Where | Role |
 |---|---|---|
-| splice (fork) | `splice/` submodule → github.com/canton-network/splice-multi-sync | **THE CODE.** Monorepo: Daml (`daml/`, `token-standard/`), Scala (`apps/`), TS frontends, vendored Canton (`canton/`), Helm (`cluster/`). All CIP feature changes land here; the PoC ladder merges into the long-running `feat/dedicated-sync`. |
+| splice (fork) | `splice/` submodule → github.com/canton-network/splice-multi-sync | **THE CODE.** Monorepo: Daml (`daml/`, `token-standard/`), Scala (`apps/`), TS frontends, vendored Canton (`canton/`), Helm (`cluster/`). All CIP feature changes land here; PRs target the fork's `main`. |
 | canton-x402-facilitator / -sdk | github.com/ChainSafe/canton-x402-* | x402 payment facilitator + SDK; source of our LocalNet harness pattern. |
 | canton-mcp-server | github.com/ChainSafe/canton-mcp-server | MCP server for Canton dev — integration point for agent-navigation tooling (RFC-002). |
 | canton-burn-snapshotter | github.com/ChainSafe/canton-burn-snapshotter | Tracks Canton burn for traffic decisions — adjacent to our traffic feature. |
@@ -61,7 +61,7 @@ engineering practice; this repo wins for project-specific facts (layout, sibling
 ## Branching & submodule policy
 
 - **This repo: branch off `main`; everything merges into `main`.** No long-lived alternative lines.
-- **The fork (`canton-network/splice-multi-sync`): PoC work branches off and merges into the long-running `feat/dedicated-sync`** (DA's direction, so their `main` stays a clean mirror of upstream `canton-network/splice`). Never commit to the fork's `main`.
+- **The fork (`canton-network/splice-multi-sync`): work branches off and merges into `main`** via PR (squash-merge; see `docs/splice-ci.md`). Never push directly to the fork's `main`. (The former long-running `feat/dedicated-sync` has been merged into `main` and is retired.)
 - **Stacked PRs are allowed** when work builds on unmerged work (base the PR on the prior branch; retarget the child to the merge target before the parent's branch is deleted). Stacks are queues for the merge target: merge them promptly; long-lived stacked branches get rewritten, which orphans anything pinned to them.
-- **The `splice/` submodule pins commits on the fork's `feat/dedicated-sync` only** (`.gitmodules` tracks `branch = feat/dedicated-sync`). In-flight PR state is never pinned here; to work on an unmerged feature branch, check it out inside `splice/` locally.
-- Bump the submodule pointer via `git add splice` **after** the commit is on `feat/dedicated-sync`, and push the submodule before the superproject.
+- **The `splice/` submodule pins commits on the fork's `main` only** (`.gitmodules` tracks `branch = main`). In-flight PR state is never pinned here; to work on an unmerged feature branch, check it out inside `splice/` locally.
+- Bump the submodule pointer via `git add splice` **after** the commit is on the fork's `main`, and push the submodule before the superproject.

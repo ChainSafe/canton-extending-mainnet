@@ -13,9 +13,9 @@ and push to the remote that is `canton-network/splice-multi-sync` (below we call
 
 ## PR / git workflow
 
-- **The fork's merge target is `feat/dedicated-sync`**, DA's long-running feature branch (their
-  direction), so the fork's `main` stays a clean mirror of upstream `canton-network/splice` and
-  never takes our commits. `main` remains the target in this repo.
+- **The fork's merge target is `main`**, the same as in this repo. (Until the PoC rungs landed, the
+  fork used the long-running `feat/dedicated-sync`; that branch has since been merged into `main`
+  and is no longer a PR target.)
 - **Stack PRs when the work depends on unmerged work.** Base the PR on the branch it builds on, not
   the merge target. Fixes to shared/base work flow downstack: land them on the base branch, then the
   dependent branch absorbs them (merge, or rebase onto the target after the base squashes; owner's
@@ -29,10 +29,10 @@ and push to the remote that is `canton-network/splice-multi-sync` (below we call
   Splice convention), which keeps each reviewed unit cleanly revertable and keeps PR-discussion
   fixups in the PR record rather than the target's history. The squash commit message must carry
   `[ci]` and `Signed-off-by`. (Rungs 1–2 landed on `feat/dedicated-sync` this way.)
-- **Do not rewrite shared history.** Never rewrite `main`, `release-line-*`, or
-  `feat/dedicated-sync` once others build on it, and coordinate before rewriting a branch someone
-  else has stacked on. Otherwise force-pushing or amending your own open PR branch is fine; with
-  submodule pins restricted to `feat/dedicated-sync` and squash-merge, it breaks nothing.
+- **Do not rewrite shared history.** Never rewrite `main` or `release-line-*`, and coordinate
+  before rewriting a branch someone else has stacked on. Otherwise force-pushing or amending your
+  own open PR branch is fine; with submodule pins restricted to `main` and squash-merge, it breaks
+  nothing.
 - **`[ci]` on the head commit.** The branch tip must carry `[ci]` or the real jobs auto-cancel (see
   gates); a new head from a merge or an amend needs it too.
 - **Submodule push order:** push `splice/` to its remote first, then `git add splice` and push here.
