@@ -48,7 +48,7 @@
 | #44 | Transaction-class characterization | superseded | P3-E1 |
 | #45 | Discount curve at burn time | superseded | P3-E3 |
 | #46 | Staking / draw-down / shortfall | superseded | P3-E4 |
-| #47 | Extension reward reporting + expansion (Daml PoC) | **shipped** (fork PRs #8/#12) | P3-E6 builds on it; not P2 |
+| #47 | Extension reward reporting + expansion (Daml PoC) | **shipped** (fork PRs #8/#12), moved off the fork's `main` to `phase-3/extension-reward-poc` (#133) | P3-E6 builds on it; not P2 |
 | #54 | Registry uniqueness: SV-UI duplicate check | carries | P2-E1.4 |
 | #57 | SV-side extension reward integration | superseded | P3-E6 (out of P2) |
 | #58 | Operator-side reward automation | superseded | P3-E6 (out of P2) |
@@ -70,7 +70,9 @@ P1→P2 migration (P2-E8.5), air-gapped proxy parking lot (P2-E8.6), two-sync Lo
 - The **shipped** Daml PoC (fork `feat/dedicated-sync`: registration, buy, reward
   reporting, lifecycle) is ahead of this plan in Daml terms; the plan's P2-E1/E2 leaves
   describe the same shapes as production work items (hardening, FR-1 outcome, pricing
-  fields). The reward-reporting half (#47's output) parks as P3-E6 input.
+  fields). The reward-reporting half (#47's output) parks as P3-E6 input: it was removed from
+  the fork's `main` so registration can go upstream without it, and lives on the fork branch
+  `phase-3/extension-reward-poc` (#133).
 
 ## Filed mapping (regenerated 2026-09-15)
 

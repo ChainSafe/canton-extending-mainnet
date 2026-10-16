@@ -38,6 +38,9 @@ P3-E7 outage settlement.
   advance (P2-E3.1).
 - Reward reporting extends the consumption-report contract with per-app activity records
   and commitment trees (P2-E6.1).
+- Registration creates no reporting state in Phase 2. P3-E6 adds an SV confirmation trigger
+  that creates one for each live registration without one (#133); the reward PoC it starts
+  from is on the fork branch `phase-3/extension-reward-poc`.
 
 ## Open design questions (settle before build)
 

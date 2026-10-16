@@ -75,7 +75,9 @@ snapshotter, platform docs, …).
   `AmuletRules_BuyMemberTraffic` with a registered-synchronizer gate and adds an operator observer
   on `MemberTraffic`. The ladder continues with extension reward reporting (per-round activity
   commitment + budget-bounded expansion through `ProcessRewardsV2`) and registration lifecycle
-  (offboard vote), both green on DA's CI and in review. Plus: the multi-sync LocalNet harness
+  (offboard vote). The reward reporting PoC has since moved off the fork's `main` to the
+  `phase-3/extension-reward-poc` branch (#133), so Phase 2 registration goes upstream without it.
+  Plus: the multi-sync LocalNet harness
   (verified) and the shadow pricing engine (green).
 - **Next + roadmap:** [`docs/planning/`](docs/planning). This README is intentionally a thin front
   door; the sequenced roadmap and per-workstream detail live there, not here.
